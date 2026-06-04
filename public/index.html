@@ -269,8 +269,7 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 1.6rem; font-weight: 700; color: white;
     }
-    .profile-name { font-size: 1rem; font-weight: 700; color: var(--navy); }
-    .profile-role { font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-bottom: 6px; }
+    .profile-role { font-size: 0.92rem; color: var(--primary); font-weight: 700; margin-bottom: 4px; }
     .profile-location { font-size: 0.82rem; color: var(--gray); margin-bottom: 10px; }
     .profile-avail {
       display: inline-block; padding: 3px 12px; border-radius: 99px;
@@ -278,8 +277,43 @@
     }
     .avail-now { background: #d1e7dd; color: #0f5132; }
     .avail-soon { background: #fff3cd; color: #856404; }
-    .profile-exp { font-size: 0.82rem; color: var(--gray); margin-top: 8px; }
+    .profile-exp { font-size: 0.82rem; color: var(--gray); margin-top: 4px; }
     .profile-software { font-size: 0.78rem; color: var(--gray); margin-top: 4px; font-style: italic; }
+    .profile-privacy { font-size: 0.75rem; color: var(--gray); margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+    /* Subscriber gate overlay */
+    .profiles-gate {
+      background: linear-gradient(135deg, #f0f6ff, #e8f4ff);
+      border: 2px dashed rgba(13,110,253,0.3);
+      border-radius: var(--radius); padding: 48px 32px;
+      text-align: center; grid-column: 1/-1;
+    }
+    .profiles-gate h3 { font-size: 1.2rem; font-weight: 800; color: var(--navy); margin-bottom: 10px; }
+    .profiles-gate p { color: var(--gray); font-size: 0.95rem; margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .profiles-gate .gate-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .profiles-gate .gate-preview {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .gate-card {
+      background: #fff; border-radius: 12px; padding: 16px 20px;
+      border: 1.5px solid var(--border); text-align: center; width: 160px;
+      filter: blur(4px); pointer-events: none; user-select: none;
+    }
+    .gate-card-avatar {
+      width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 8px;
+      background: linear-gradient(135deg, #ccc, #aaa);
+    }
+    .gate-card-line { height: 10px; background: #e0e0e0; border-radius: 4px; margin-bottom: 6px; }
+
+    /* Subscriber token form */
+    .subscriber-form { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+    .subscriber-input {
+      padding: 10px 16px; border: 1.5px solid var(--border);
+      border-radius: 9px; font-size: 0.9rem; outline: none;
+      transition: border 0.18s; width: 220px;
+    }
+    .subscriber-input:focus { border-color: var(--primary); }
 
     /* ── TESTIMONIALS ── */
     .testimonials-section { padding: 72px 24px; background: var(--light); }
@@ -514,17 +548,54 @@
   <div class="profiles-inner">
     <div class="section-title">
       <div class="label">Available Talent</div>
-      <h2>Verified NC Dental Professionals</h2>
-      <p>Browse credentialed hygienists, assistants, and front desk pros ready to work.</p>
+      <h2>Find Your Next NC Dental Professional</h2>
+      <p>Verified hygienists, assistants, and front desk pros ready to work — protected by our privacy-first platform.</p>
     </div>
+
+    <!-- Subscriber unlock bar -->
+    <div id="subscriberBar" style="max-width:680px;margin:0 auto 32px;background:var(--light);border-radius:12px;padding:20px 24px;border:1.5px solid rgba(13,110,253,0.2);">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:1.3rem">🔒</span>
+        <div style="flex:1;min-width:200px">
+          <strong style="color:var(--navy);font-size:0.95rem">Subscriber Access Required</strong>
+          <div style="font-size:0.82rem;color:var(--gray);margin-top:2px">Post a job ($10) or subscribe ($80/mo) to view available professionals and send invitations.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a href="#" onclick="openModal('postModal')" class="btn btn-primary" style="padding:8px 18px;font-size:0.88rem">Post a Job — $10</a>
+          <button onclick="showTokenEntry()" class="btn btn-outline" style="padding:8px 18px;font-size:0.88rem">I'm a Subscriber</button>
+        </div>
+      </div>
+      <div id="tokenEntry" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+        <div style="font-size:0.85rem;color:var(--gray);margin-bottom:8px">Enter your subscriber access code (emailed when you subscribed):</div>
+        <div class="subscriber-form">
+          <input type="text" class="subscriber-input" id="subscriberTokenInput" placeholder="Enter access code..." />
+          <button class="btn btn-primary" onclick="unlockProfiles()" style="padding:10px 20px">Unlock</button>
+        </div>
+        <div id="tokenError" style="font-size:0.82rem;color:var(--danger);margin-top:8px;display:none">Incorrect code. Check your subscription confirmation email.</div>
+      </div>
+    </div>
+
     <div class="profiles-grid" id="profilesGrid">
-      <div class="skeleton-card"><div class="skeleton" style="width:64px;height:64px;border-radius:50%;margin:0 auto 12px"></div><div class="skeleton" style="width:70%;margin:0 auto 8px"></div><div class="skeleton" style="width:50%;margin:0 auto"></div></div>
-      <div class="skeleton-card"><div class="skeleton" style="width:64px;height:64px;border-radius:50%;margin:0 auto 12px"></div><div class="skeleton" style="width:70%;margin:0 auto 8px"></div><div class="skeleton" style="width:50%;margin:0 auto"></div></div>
-      <div class="skeleton-card"><div class="skeleton" style="width:64px;height:64px;border-radius:50%;margin:0 auto 12px"></div><div class="skeleton" style="width:70%;margin:0 auto 8px"></div><div class="skeleton" style="width:50%;margin:0 auto"></div></div>
-      <div class="skeleton-card"><div class="skeleton" style="width:64px;height:64px;border-radius:50%;margin:0 auto 12px"></div><div class="skeleton" style="width:70%;margin:0 auto 8px"></div><div class="skeleton" style="width:50%;margin:0 auto"></div></div>
+      <!-- Blurred preview for non-subscribers -->
+      <div class="profiles-gate">
+        <div class="gate-icon">🦷</div>
+        <div class="gate-preview">
+          <div class="gate-card"><div class="gate-card-avatar"></div><div class="gate-card-line" style="width:80%"></div><div class="gate-card-line" style="width:60%"></div><div class="gate-card-line" style="width:70%"></div></div>
+          <div class="gate-card"><div class="gate-card-avatar"></div><div class="gate-card-line" style="width:80%"></div><div class="gate-card-line" style="width:60%"></div><div class="gate-card-line" style="width:70%"></div></div>
+          <div class="gate-card"><div class="gate-card-avatar"></div><div class="gate-card-line" style="width:80%"></div><div class="gate-card-line" style="width:60%"></div><div class="gate-card-line" style="width:70%"></div></div>
+          <div class="gate-card"><div class="gate-card-avatar"></div><div class="gate-card-line" style="width:80%"></div><div class="gate-card-line" style="width:60%"></div><div class="gate-card-line" style="width:70%"></div></div>
+        </div>
+        <h3>Verified NC Dental Professionals Are Waiting</h3>
+        <p>Post a job or subscribe to see full profiles, send invitations, and get matched with available professionals near you. Contact info is always protected — all communication goes through DentalHire NC.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="#" onclick="openModal('postModal')" class="btn btn-primary">Post a Job — $10</a>
+          <a href="#" onclick="openModal('subscribeModal')" class="btn btn-outline">Subscribe — $80/mo</a>
+        </div>
+      </div>
     </div>
+
     <div style="text-align:center;margin-top:36px;">
-      <a href="#" onclick="openModal('workerModal')" class="btn btn-success">Join as a Professional — It's Free</a>
+      <a href="#" onclick="openModal('workerModal')" class="btn btn-success">Are you a dental professional? Join Free →</a>
     </div>
   </div>
 </section>
@@ -895,6 +966,58 @@
   </div>
 </div>
 
+<!-- MODAL: Invite Professional -->
+<div class="modal-overlay" id="inviteModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📨 Invite to Apply</div>
+      <button class="modal-close" onclick="closeModal('inviteModal')">✕</button>
+    </div>
+    <div style="background:var(--light);border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:0.88rem;color:#444;border-left:3px solid var(--primary)">
+      <strong>How this works:</strong> Your invitation is sent through DentalHire NC. The professional chooses whether to respond — their contact info stays private until they decide to connect with you.
+    </div>
+    <div class="apply-job-title" id="inviteWorkerInfo">
+      <strong>Dental Professional</strong>
+      <span>NC</span>
+    </div>
+    <form id="inviteForm" onsubmit="submitInvite(event)">
+      <input type="hidden" name="worker_id" id="inviteWorkerId" />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Your Practice Name <span class="req">*</span></label>
+          <input type="text" class="form-control" name="practice_name" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Your Email <span class="req">*</span></label>
+          <input type="email" class="form-control" name="practice_email" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role You Need</label>
+        <select class="form-control" name="role_needed">
+          <option value="">Select role...</option>
+          <option>Dental Hygienist (RDH)</option>
+          <option>Dental Assistant (DA)</option>
+          <option>Expanded Functions DA (EFDA)</option>
+          <option>Front Desk / Receptionist</option>
+          <option>Office Manager</option>
+          <option>Treatment Coordinator</option>
+          <option>Billing Specialist</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message to Professional</label>
+        <textarea class="form-control" name="message" rows="3" placeholder="Tell them about your practice, the opportunity, your city, and what you're looking for..."></textarea>
+      </div>
+      <div id="inviteMsg"></div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary" id="inviteBtn" style="flex:1">Send Invitation →</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('inviteModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- MODAL: Apply to Job -->
 <div class="modal-overlay" id="applyModal">
   <div class="modal">
@@ -1013,7 +1136,7 @@ let pendingJobId = null;
 document.addEventListener('DOMContentLoaded', () => {
   populateCityDropdowns();
   loadJobs();
-  loadWorkers();
+  tryAutoUnlock();
 });
 
 function populateCityDropdowns() {
@@ -1108,45 +1231,88 @@ function applyFilters() {
   renderJobs(filtered);
 }
 
-// ── WORKERS ──
-async function loadWorkers() {
+// ── WORKERS / SUBSCRIBER GATE ──
+let subscriberToken = sessionStorage.getItem('dhncToken') || '';
+
+function showTokenEntry() {
+  const el = document.getElementById('tokenEntry');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function unlockProfiles() {
+  const token = document.getElementById('subscriberTokenInput').value.trim();
+  if (!token) return;
+  document.getElementById('tokenError').style.display = 'none';
+
   try {
-    const res = await fetch(`${API}/workers`);
+    const res = await fetch(`${API}/workers/profiles`, {
+      headers: { 'x-subscriber-token': token }
+    });
+    if (!res.ok) {
+      document.getElementById('tokenError').style.display = 'block';
+      return;
+    }
+    subscriberToken = token;
+    sessionStorage.setItem('dhncToken', token);
     const data = await res.json();
-    renderWorkers(data.workers || []);
+    renderWorkerProfiles(data.workers || []);
+    document.getElementById('subscriberBar').style.display = 'none';
   } catch {
-    renderWorkers([]);
+    document.getElementById('tokenError').style.display = 'block';
   }
 }
 
-function renderWorkers(workers) {
+async function tryAutoUnlock() {
+  if (!subscriberToken) return;
+  try {
+    const res = await fetch(`${API}/workers/profiles`, {
+      headers: { 'x-subscriber-token': subscriberToken }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      renderWorkerProfiles(data.workers || []);
+      document.getElementById('subscriberBar').style.display = 'none';
+    } else {
+      sessionStorage.removeItem('dhncToken');
+      subscriberToken = '';
+    }
+  } catch { /* leave gate in place */ }
+}
+
+function renderWorkerProfiles(workers) {
   const grid = document.getElementById('profilesGrid');
   if (!workers.length) {
     grid.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
         <div class="empty-icon">💼</div>
-        <strong>Be the first professional to join!</strong><br>
-        <small>Create your free profile and get found by NC dental offices.</small>
+        <strong>No professionals listed yet.</strong><br>
+        <small>Share the site with your Facebook group — professionals join free!</small>
       </div>`;
     return;
   }
 
   grid.innerHTML = workers.map((w, i) => {
-    const initials = `${w.first_name[0]}${w.last_name[0]}`.toUpperCase();
+    const initials = `${(w.first_name||'?')[0]}${(w.last_name||'?')[0]}`.toUpperCase();
     const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
     const isTempOpen = (w.temp_open || '').toLowerCase().includes('yes') || (w.temp_open || '').toLowerCase().includes('both');
     const availClass = isTempOpen ? 'avail-now' : 'avail-soon';
     const availLabel = isTempOpen ? 'Available for Temp' : 'Permanent Only';
-    const softwareLine = w.software ? `<div class="profile-software">${escHtml(w.software)}</div>` : '';
+    const softwareLine = w.software ? `<div class="profile-software">💻 ${escHtml(w.software)}</div>` : '';
+    const licLine = w.license_number ? `<div style="font-size:0.75rem;color:var(--success);margin-top:4px">✓ Licensed: ${escHtml(w.license_number)}</div>` : '';
     return `
       <div class="profile-card">
         <div class="profile-avatar" style="background:${color}">${initials}</div>
-        <div class="profile-name">${escHtml(w.first_name)} ${escHtml(w.last_name[0])}.</div>
         <div class="profile-role">${escHtml(w.role)}</div>
         <div class="profile-location">📍 ${escHtml(w.city)}, NC</div>
         <span class="profile-avail ${availClass}">${availLabel}</span>
         ${softwareLine}
+        ${licLine}
         <div class="profile-exp">${escHtml(w.experience || '')} experience</div>
+        <div class="profile-privacy">🔒 Contact protected by DentalHire NC</div>
+        <button onclick="openInvite(${w.id},'${escAttr(w.role)}','${escAttr(w.city)}')"
+          class="btn btn-outline" style="width:100%;margin-top:12px;padding:8px;font-size:0.85rem">
+          Send Invitation →
+        </button>
       </div>`;
   }).join('');
 }
@@ -1221,12 +1387,11 @@ async function submitWorker(e) {
       return;
     }
 
-    msg.innerHTML = `<div class="form-success">🎉 Profile created! Offices can now find you.</div>`;
+    msg.innerHTML = `<div class="form-success">🎉 Profile created! Subscribing offices can now find and invite you.</div>`;
     form.reset();
     setTimeout(() => {
       closeModal('workerModal');
       showToast('Welcome to DentalHire NC! Your profile is live.', 'success');
-      loadWorkers();
     }, 1600);
 
   } catch {
@@ -1284,6 +1449,57 @@ async function submitApply(e) {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Submit Application →';
+  }
+}
+
+// ── FORM: Invite Professional ──
+function openInvite(workerId, role, city) {
+  document.getElementById('inviteWorkerId').value = workerId;
+  document.getElementById('inviteWorkerInfo').innerHTML =
+    `<strong>${escHtml(role)}</strong><span>📍 ${escHtml(city)}, NC</span>`;
+  document.getElementById('inviteMsg').innerHTML = '';
+  document.getElementById('inviteForm').reset();
+  document.getElementById('inviteWorkerId').value = workerId;
+  openModal('inviteModal');
+}
+
+async function submitInvite(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('inviteBtn');
+  const msg = document.getElementById('inviteMsg');
+
+  const body = Object.fromEntries(new FormData(form));
+  body.worker_id = parseInt(body.worker_id);
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  msg.innerHTML = '';
+
+  try {
+    const res = await fetch(`${API}/invite/${body.worker_id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      msg.innerHTML = `<div class="form-error">⚠️ ${escHtml(data.error || 'Something went wrong.')}</div>`;
+      return;
+    }
+
+    msg.innerHTML = `<div class="form-success">✅ Invitation sent! The professional will reach out if they are interested.</div>`;
+    form.reset();
+    setTimeout(() => {
+      closeModal('inviteModal');
+      showToast('Invitation sent through DentalHire NC!', 'success');
+    }, 1800);
+
+  } catch {
+    msg.innerHTML = `<div class="form-error">⚠️ Network error. Please try again.</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Invitation →';
   }
 }
 
