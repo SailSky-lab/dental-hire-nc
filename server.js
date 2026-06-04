@@ -167,6 +167,47 @@ app.post("/api/workers", (req, res) => {
   }
 });
 
+// ── Worker: look up own profile by email ──
+app.post("/api/workers/login", (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required." });
+  const worker = db.prepare(`
+    SELECT id, first_name, last_name, role, city, experience, license_number, software, temp_open, status, created_at
+    FROM dental_workers WHERE email = ?
+  `).get(email.toLowerCase().trim());
+  if (!worker) return res.status(404).json({ error: "No profile found with that email. Make sure you use the same email you signed up with." });
+  const applications = db.prepare(`
+    SELECT a.created_at, j.position, j.practice, j.city, j.job_type
+    FROM dental_applications a
+    JOIN dental_jobs j ON a.job_id = j.id
+    WHERE a.email = ?
+    ORDER BY a.created_at DESC
+  `).all(email.toLowerCase().trim());
+  const invitations = db.prepare(`
+    SELECT practice_name, role_needed, message, status, created_at
+    FROM practice_invitations WHERE worker_id = ?
+    ORDER BY created_at DESC
+  `).all(worker.id);
+  res.json({ worker, applications, invitations });
+});
+
+// ── Worker: update own profile ──
+app.patch("/api/workers/update", (req, res) => {
+  const { email, software, temp_open, experience, city } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required." });
+  const existing = db.prepare("SELECT id FROM dental_workers WHERE email = ?").get(email.toLowerCase().trim());
+  if (!existing) return res.status(404).json({ error: "Profile not found." });
+  try {
+    db.prepare(`
+      UPDATE dental_workers SET software=?, temp_open=?, experience=?, city=?
+      WHERE email=?
+    `).run(software || null, temp_open || null, experience || null, city || null, email.toLowerCase().trim());
+    res.json({ message: "Profile updated successfully!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Applications (worker → job) ──
 app.post("/api/apply", (req, res) => {
   const { job_id, name, email, phone, message } = req.body;

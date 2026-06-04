@@ -306,6 +306,42 @@
     }
     .gate-card-line { height: 10px; background: #e0e0e0; border-radius: 4px; margin-bottom: 6px; }
 
+    /* My Profile view */
+    .my-profile-header {
+      display: flex; align-items: center; gap: 16px;
+      background: linear-gradient(135deg, var(--navy), #1a6b9a);
+      border-radius: 12px; padding: 20px; margin-bottom: 20px; color: #fff;
+    }
+    .my-profile-avatar {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 700; flex-shrink: 0;
+    }
+    .my-profile-name { font-size: 1.15rem; font-weight: 800; }
+    .my-profile-role { font-size: 0.88rem; opacity: 0.85; margin-top: 2px; }
+    .my-profile-city { font-size: 0.82rem; opacity: 0.7; margin-top: 2px; }
+    .profile-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .profile-info-item { background: var(--gray-light); border-radius: 10px; padding: 12px 14px; }
+    .profile-info-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--gray); margin-bottom: 4px; }
+    .profile-info-value { font-size: 0.92rem; font-weight: 600; color: var(--navy); }
+    .profile-section-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray); margin: 20px 0 10px; }
+    .application-item {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 12px 14px; background: var(--gray-light); border-radius: 10px; margin-bottom: 8px;
+    }
+    .application-item strong { font-size: 0.92rem; color: var(--navy); display: block; }
+    .application-item span { font-size: 0.82rem; color: var(--gray); }
+    .application-date { font-size: 0.78rem; color: var(--gray); white-space: nowrap; margin-left: 8px; flex-shrink: 0; }
+    .invitation-item {
+      padding: 12px 14px; background: #f0fff4; border-radius: 10px;
+      border-left: 3px solid var(--success); margin-bottom: 8px;
+    }
+    .invitation-item strong { font-size: 0.92rem; color: var(--navy); display: block; margin-bottom: 4px; }
+    .invitation-item p { font-size: 0.85rem; color: #444; font-style: italic; }
+    .invitation-item .inv-meta { font-size: 0.78rem; color: var(--gray); margin-top: 6px; }
+    .no-items { font-size: 0.88rem; color: var(--gray); text-align: center; padding: 16px; background: var(--gray-light); border-radius: 10px; }
+
     /* Subscriber token form */
     .subscriber-form { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
     .subscriber-input {
@@ -453,6 +489,7 @@
       <a href="#how">How It Works</a>
       <a href="#pricing">Pricing</a>
       <a href="#" onclick="openModal('workerModal')">Sign Up Free</a>
+      <a href="#" onclick="openModal('myProfileModal')" id="myProfileNav">My Profile</a>
       <a href="#" onclick="openModal('postModal')" class="btn btn-primary">Post a Job</a>
     </div>
     <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
@@ -1094,6 +1131,35 @@
   </div>
 </div>
 
+<!-- MODAL: My Profile (Professional Login) -->
+<div class="modal-overlay" id="myProfileModal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title">👤 My Profile</div>
+      <button class="modal-close" onclick="closeModal('myProfileModal')">✕</button>
+    </div>
+
+    <!-- Step 1: Email login -->
+    <div id="profileLoginView">
+      <p style="color:var(--gray);font-size:0.9rem;margin-bottom:20px">Enter the email you used when you signed up to view your profile.</p>
+      <div class="form-group">
+        <label class="form-label">Your Email <span class="req">*</span></label>
+        <input type="email" class="form-control" id="profileEmailInput" placeholder="Enter your email..." onkeydown="if(event.key==='Enter') loadMyProfile()" />
+      </div>
+      <div id="profileLoginMsg"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="loadMyProfile()" id="profileLoginBtn" style="flex:1">View My Profile →</button>
+        <button class="btn btn-outline" onclick="closeModal('myProfileModal')">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Profile view -->
+    <div id="profileView" style="display:none">
+      <div id="profileContent"></div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1452,6 +1518,119 @@ async function submitApply(e) {
   }
 }
 
+// ── MY PROFILE ──
+async function loadMyProfile() {
+  const email = document.getElementById('profileEmailInput').value.trim();
+  if (!email) return;
+  const btn = document.getElementById('profileLoginBtn');
+  const msg = document.getElementById('profileLoginMsg');
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  msg.innerHTML = '';
+
+  try {
+    const res = await fetch(`${API}/workers/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      msg.innerHTML = `<div class="form-error">⚠️ ${escHtml(data.error)}</div>`;
+      return;
+    }
+
+    document.getElementById('profileLoginView').style.display = 'none';
+    document.getElementById('profileView').style.display = 'block';
+    renderMyProfile(data.worker, data.applications, data.invitations, email);
+
+  } catch {
+    msg.innerHTML = `<div class="form-error">⚠️ Network error. Please try again.</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'View My Profile →';
+  }
+}
+
+function renderMyProfile(w, applications, invitations, email) {
+  const initials = `${(w.first_name||'?')[0]}${(w.last_name||'?')[0]}`.toUpperCase();
+  const isTempOpen = (w.temp_open || '').toLowerCase().includes('yes') || (w.temp_open || '').toLowerCase().includes('both');
+
+  const appsHtml = applications.length
+    ? applications.map(a => `
+        <div class="application-item">
+          <div>
+            <strong>${escHtml(a.position)} — ${escHtml(a.practice)}</strong>
+            <span>📍 ${escHtml(a.city)} &nbsp;·&nbsp; ${escHtml(a.job_type)}</span>
+          </div>
+          <span class="application-date">${relativeDate(a.created_at)}</span>
+        </div>`).join('')
+    : `<div class="no-items">You haven't applied to any jobs yet. <a href="#jobs" onclick="closeModal('myProfileModal')">Browse open jobs →</a></div>`;
+
+  const invsHtml = invitations.length
+    ? invitations.map(inv => `
+        <div class="invitation-item">
+          <strong>📨 ${escHtml(inv.practice_name)}</strong>
+          ${inv.role_needed ? `<span style="font-size:0.82rem;color:var(--primary);font-weight:600">${escHtml(inv.role_needed)}</span>` : ''}
+          ${inv.message ? `<p>"${escHtml(inv.message)}"</p>` : ''}
+          <div class="inv-meta">${relativeDate(inv.created_at)} &nbsp;·&nbsp; Reply to this practice to connect</div>
+        </div>`).join('')
+    : `<div class="no-items">No invitations yet. Check back soon!</div>`;
+
+  document.getElementById('profileContent').innerHTML = `
+    <div class="my-profile-header">
+      <div class="my-profile-avatar">${initials}</div>
+      <div>
+        <div class="my-profile-name">${escHtml(w.first_name)} ${escHtml(w.last_name)}</div>
+        <div class="my-profile-role">${escHtml(w.role)}</div>
+        <div class="my-profile-city">📍 ${escHtml(w.city)}, NC</div>
+      </div>
+    </div>
+
+    <div class="profile-info-grid">
+      <div class="profile-info-item">
+        <div class="profile-info-label">Experience</div>
+        <div class="profile-info-value">${escHtml(w.experience || 'Not set')}</div>
+      </div>
+      <div class="profile-info-item">
+        <div class="profile-info-label">Temp / Per Diem</div>
+        <div class="profile-info-value">${isTempOpen ? '✅ Open to temp' : '🔵 Permanent only'}</div>
+      </div>
+      <div class="profile-info-item">
+        <div class="profile-info-label">Software</div>
+        <div class="profile-info-value">${escHtml(w.software || 'Not set')}</div>
+      </div>
+      <div class="profile-info-item">
+        <div class="profile-info-label">NC License</div>
+        <div class="profile-info-value">${w.license_number ? '✓ ' + escHtml(w.license_number) : 'Not provided'}</div>
+      </div>
+    </div>
+
+    <div style="background:#e8f4ff;border-radius:10px;padding:12px 14px;font-size:0.85rem;color:#444;margin-bottom:20px">
+      🔒 <strong>Your contact info is private.</strong> Offices cannot see your email or phone — they can only send you an invitation through the platform. You choose whether to respond.
+    </div>
+
+    <div class="profile-section-title">Your Job Applications (${applications.length})</div>
+    ${appsHtml}
+
+    <div class="profile-section-title">Invitations from Practices (${invitations.length})</div>
+    ${invsHtml}
+
+    <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap">
+      <a href="#jobs" onclick="closeModal('myProfileModal')" class="btn btn-primary" style="flex:1">Browse Jobs →</a>
+      <button onclick="resetProfileView()" class="btn btn-outline" style="padding:10px 18px">Sign Out</button>
+    </div>
+  `;
+}
+
+function resetProfileView() {
+  document.getElementById('profileLoginView').style.display = 'block';
+  document.getElementById('profileView').style.display = 'none';
+  document.getElementById('profileEmailInput').value = '';
+  document.getElementById('profileLoginMsg').innerHTML = '';
+}
+
 // ── FORM: Invite Professional ──
 function openInvite(workerId, role, city) {
   document.getElementById('inviteWorkerId').value = workerId;
@@ -1516,6 +1695,7 @@ function submitSubscribe(e) {
 function openModal(id) {
   document.getElementById(id).classList.add('open');
   document.body.style.overflow = 'hidden';
+  if (id === 'myProfileModal') resetProfileView();
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
