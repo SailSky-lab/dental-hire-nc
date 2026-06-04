@@ -432,7 +432,7 @@
   <p>Connecting dental offices with verified hygienists, assistants, and front desk professionals across all of North Carolina — especially temp and same-day coverage.</p>
   <div class="hero-cta">
     <a href="#jobs" class="btn btn-primary btn-lg">Browse Open Jobs</a>
-    <a href="#" onclick="openModal('postModal')" class="btn btn-lg" style="background:#fff;color:var(--navy)">Post a Job — $35</a>
+    <a href="#" onclick="openModal('postModal')" class="btn btn-lg" style="background:#fff;color:var(--navy)">Post a Job — $10</a>
   </div>
   <div class="hero-stats">
     <div class="hero-stat"><strong id="statWorkers">400+</strong><span>Verified Professionals</span></div>
@@ -471,7 +471,7 @@
       <div class="path-icon">🏥</div>
       <h3>I'm a Dental Office</h3>
       <p>Post temp or permanent jobs and get matched with credentialed local professionals — often within hours. No agency markups.</p>
-      <a href="#" onclick="openModal('postModal')" class="btn btn-primary" style="width:100%">Post a Job — $35</a>
+      <a href="#" onclick="openModal('postModal')" class="btn btn-primary" style="width:100%">Post a Job — $10</a>
     </div>
     <div class="path-card worker">
       <div class="path-icon">💼</div>
@@ -544,7 +544,7 @@
       <div class="how-step">
         <div class="how-step-num">1</div>
         <h4>Post Your Job</h4>
-        <p>Takes 3 minutes. Describe the role, dates, pay rate, and requirements. Pay just $35 per listing.</p>
+        <p>Takes 3 minutes. Describe the role, dates, pay rate, and requirements. Pay just $10 per listing.</p>
       </div>
       <div class="how-step">
         <div class="how-step-num">2</div>
@@ -602,7 +602,7 @@
       <div class="pricing-card featured">
         <div class="pricing-popular">⭐ Most Popular</div>
         <div class="pricing-label">Per Job Post</div>
-        <div class="pricing-price">$35 <span>/ listing</span></div>
+        <div class="pricing-price">$10 <span>/ listing</span></div>
         <div class="pricing-desc">Post a single job. Active for 30 days, unlimited applicants.</div>
         <ul class="pricing-features">
           <li>30-day active listing</li>
@@ -611,11 +611,11 @@
           <li>Temp, perm, part-time, contract</li>
           <li>Featured placement on site</li>
         </ul>
-        <a href="#" onclick="openModal('postModal')" class="btn btn-primary" style="width:100%">Post a Job — $35</a>
+        <a href="#" onclick="openModal('postModal')" class="btn btn-primary" style="width:100%">Post a Job — $10</a>
       </div>
       <div class="pricing-card">
         <div class="pricing-label">Monthly Unlimited</div>
-        <div class="pricing-price">$89 <span>/ month</span></div>
+        <div class="pricing-price">$80 <span>/ month</span></div>
         <div class="pricing-desc">Best for busy offices that need frequent temp coverage.</div>
         <ul class="pricing-features">
           <li>Unlimited job posts</li>
@@ -624,7 +624,7 @@
           <li>Dedicated office profile page</li>
           <li>Cancel anytime</li>
         </ul>
-        <a href="#" onclick="openModal('subscribeModal')" class="btn btn-outline" style="width:100%">Subscribe — $89/mo</a>
+        <a href="#" onclick="openModal('subscribeModal')" class="btn btn-outline" style="width:100%">Subscribe — $80/mo</a>
       </div>
     </div>
     <p style="text-align:center;color:var(--gray);font-size:0.85rem;margin-top:24px;">
@@ -674,7 +674,7 @@
   <h2>Ready to Transform Your Dental Staffing?</h2>
   <p>Join NC dental professionals on DentalHire NC. No contracts, no agency fees, no commission on placements.</p>
   <div class="cta-btns">
-    <a href="#" onclick="openModal('postModal')" class="btn btn-white btn-lg">Post a Job — $35</a>
+    <a href="#" onclick="openModal('postModal')" class="btn btn-white btn-lg">Post a Job — $10</a>
     <a href="#" onclick="openModal('workerModal')" class="btn btn-ghost btn-lg">Join Free as a Professional</a>
   </div>
 </section>
@@ -729,7 +729,7 @@
     <div class="modal-payment-box">
       <h4>One-time listing fee</h4>
       <p>Active for 30 days · Unlimited applicants · Direct contact with candidates</p>
-      <span class="price-highlight">$35 per listing</span>
+      <span class="price-highlight">$10 per listing</span>
     </div>
     <form id="postJobForm" onsubmit="submitJob(event)">
       <div class="form-group">
@@ -797,7 +797,7 @@
       </div>
       <div id="postJobMsg"></div>
       <div class="modal-footer">
-        <button type="submit" class="btn btn-primary" id="postJobBtn" style="flex:1">Save & Continue to Payment ($35) →</button>
+        <button type="submit" class="btn btn-primary" id="postJobBtn" style="flex:1">Save & Continue to Payment ($10) →</button>
         <button type="button" class="btn btn-outline" onclick="closeModal('postModal')">Cancel</button>
       </div>
     </form>
@@ -945,7 +945,7 @@
     <div class="modal-payment-box">
       <h4>Monthly Subscription</h4>
       <p>Unlimited job posts · Priority placement · Cancel anytime</p>
-      <span class="price-highlight">$89 / month</span>
+      <span class="price-highlight">$80 / month</span>
     </div>
     <form id="subscribeForm" onsubmit="submitSubscribe(event)">
       <div class="form-group">
@@ -964,7 +964,7 @@
       </div>
       <div id="subscribeMsg"></div>
       <div class="modal-footer">
-        <button type="submit" class="btn btn-primary" style="flex:1">Continue to Payment ($89/mo) →</button>
+        <button type="submit" class="btn btn-primary" style="flex:1">Continue to Payment ($80/mo) →</button>
         <button type="button" class="btn btn-outline" onclick="closeModal('subscribeModal')">Cancel</button>
       </div>
     </form>
@@ -1192,7 +1192,7 @@ async function submitJob(e) {
     msg.innerHTML = `<div class="form-error">⚠️ Network error. Please try again.</div>`;
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Save & Continue to Payment ($35) →';
+    btn.textContent = 'Save & Continue to Payment ($10) →';
   }
 }
 
