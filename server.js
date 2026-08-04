@@ -243,11 +243,70 @@ app.post("/api/invite/:workerId", (req, res) => {
   }
 });
 
-// ── Admin (your private view — bookmark these URLs) ──
-app.get("/api/admin/jobs",         (_req, res) => res.json({ jobs:         db.prepare("SELECT * FROM dental_jobs ORDER BY created_at DESC").all() }));
-app.get("/api/admin/workers",      (_req, res) => res.json({ workers:      db.prepare("SELECT * FROM dental_workers ORDER BY created_at DESC").all() }));
-app.get("/api/admin/applications", (_req, res) => res.json({ applications: db.prepare("SELECT a.*, j.position, j.practice, j.city FROM dental_applications a JOIN dental_jobs j ON a.job_id=j.id ORDER BY a.created_at DESC").all() }));
-app.get("/api/admin/invitations",  (_req, res) => res.json({ invitations:  db.prepare("SELECT i.*, w.role, w.city FROM practice_invitations i JOIN dental_workers w ON i.worker_id=w.id ORDER BY i.created_at DESC").all() }));
+// ── Admin Auth Middleware ──
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin2026";
+
+function adminAuth(req, res, next) {
+  const token = req.headers["x-admin-token"];
+  if (token !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Unauthorized." });
+  }
+  next();
+}
+
+app.post("/api/admin/login", (req, res) => {
+  const { password } = req.body;
+  if (password === ADMIN_PASSWORD) {
+    res.json({ token: ADMIN_PASSWORD, message: "Welcome, Admin!" });
+  } else {
+    res.status(401).json({ error: "Incorrect password." });
+  }
+});
+
+// ── Admin: read ──
+app.get("/api/admin/jobs",         adminAuth, (_req, res) => res.json({ jobs:         db.prepare("SELECT * FROM dental_jobs ORDER BY created_at DESC").all() }));
+app.get("/api/admin/workers",      adminAuth, (_req, res) => res.json({ workers:      db.prepare("SELECT * FROM dental_workers ORDER BY created_at DESC").all() }));
+app.get("/api/admin/applications", adminAuth, (_req, res) => res.json({ applications: db.prepare("SELECT a.*, j.position, j.practice, j.city FROM dental_applications a JOIN dental_jobs j ON a.job_id=j.id ORDER BY a.created_at DESC").all() }));
+app.get("/api/admin/invitations",  adminAuth, (_req, res) => res.json({ invitations:  db.prepare("SELECT i.*, w.role, w.city FROM practice_invitations i JOIN dental_workers w ON i.worker_id=w.id ORDER BY i.created_at DESC").all() }));
+
+// ── Admin: create job manually ──
+app.post("/api/admin/jobs", adminAuth, (req, res) => {
+  const { practice, position, job_type, city, pay_rate, dates, description, contact_name, contact_email } = req.body;
+  if (!practice || !position || !job_type || !city) {
+    return res.status(400).json({ error: "practice, position, job_type and city are required." });
+  }
+  try {
+    const result = db.prepare(`
+      INSERT INTO dental_jobs (practice, position, job_type, city, pay_rate, dates, description, contact_name, contact_email, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+    `).run(practice, position, job_type, city, pay_rate || null, dates || null, description || null, contact_name || "Admin", contact_email || "admin@thedentalhire.com");
+    res.status(201).json({ job: db.prepare("SELECT * FROM dental_jobs WHERE id = ?").get(result.lastInsertRowid) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Admin: update job status ──
+app.patch("/api/admin/jobs/:id", adminAuth, (req, res) => {
+  const { status } = req.body;
+  if (!["active", "inactive", "filled"].includes(status)) {
+    return res.status(400).json({ error: "status must be active, inactive, or filled." });
+  }
+  db.prepare("UPDATE dental_jobs SET status = ? WHERE id = ?").run(status, req.params.id);
+  res.json({ message: "Job updated." });
+});
+
+// ── Admin: delete job ──
+app.delete("/api/admin/jobs/:id", adminAuth, (req, res) => {
+  db.prepare("DELETE FROM dental_jobs WHERE id = ?").run(req.params.id);
+  res.json({ message: "Job deleted." });
+});
+
+// ── Admin: delete worker ──
+app.delete("/api/admin/workers/:id", adminAuth, (req, res) => {
+  db.prepare("DELETE FROM dental_workers WHERE id = ?").run(req.params.id);
+  res.json({ message: "Worker deleted." });
+});
 
 // Catch-all → index.html
 app.get("*", (_req, res) => res.sendFile(join(__dirname, "public", "index.html")));

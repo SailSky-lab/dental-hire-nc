@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — DentalHire NC</title>
+  <style>
+    :root {
+      --primary: #0d6efd; --navy: #0f2557; --gray: #6c757d;
+      --border: #dee2e6; --light: #f0f6ff; --radius: 12px;
+      --success: #198754; --danger: #dc3545; --warning: #ffc107;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f4f6fb; color: #212529; min-height: 100vh; }
+
+    /* ── LOGIN ── */
+    .login-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--navy), #1a3a8a);
+    }
+    .login-card {
+      background: #fff; border-radius: 18px; padding: 40px 36px;
+      width: 100%; max-width: 380px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .login-logo { font-size: 2.5rem; margin-bottom: 8px; }
+    .login-card h1 { font-size: 1.3rem; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+    .login-card p { font-size: 0.88rem; color: var(--gray); margin-bottom: 28px; }
+    .login-input {
+      width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 1rem; margin-bottom: 14px;
+      outline: none; transition: border 0.18s;
+    }
+    .login-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,0.1); }
+    .login-btn {
+      width: 100%; padding: 12px; background: var(--primary); color: #fff;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .login-btn:hover { background: #0a58ca; }
+    .login-error { color: var(--danger); font-size: 0.85rem; margin-top: 10px; }
+
+    /* ── LAYOUT ── */
+    .app { display: none; min-height: 100vh; }
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
+      background: var(--navy); padding: 24px 0; overflow-y: auto; z-index: 100;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px; padding: 0 20px 24px;
+      font-size: 1rem; font-weight: 800; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 12px;
+    }
+    .sidebar-logo span { font-size: 1.4rem; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 20px; color: rgba(255,255,255,0.7);
+      font-size: 0.92rem; font-weight: 500; cursor: pointer;
+      border-left: 3px solid transparent; transition: all 0.18s;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; border-left-color: #0dcaf0; }
+    .nav-item .icon { font-size: 1.1rem; width: 22px; text-align: center; flex-shrink: 0; }
+    .nav-section { padding: 14px 20px 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(255,255,255,0.35); }
+    .sidebar-logout {
+      margin-top: auto; padding: 14px 20px; color: rgba(255,255,255,0.5);
+      font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 8px;
+      position: absolute; bottom: 0; left: 0; right: 0; border-top: 1px solid rgba(255,255,255,0.1);
+      transition: color 0.18s;
+    }
+    .sidebar-logout:hover { color: #fff; }
+
+    .main { margin-left: 220px; padding: 28px; min-height: 100vh; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── HEADER ── */
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 800; color: var(--navy); }
+    .page-header p { font-size: 0.88rem; color: var(--gray); margin-top: 2px; }
+
+    /* ── STATS ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: #fff; border-radius: var(--radius); padding: 20px;
+      border: 1.5px solid var(--border); text-align: center;
+    }
+    .stat-num { font-size: 2rem; font-weight: 800; color: var(--navy); }
+    .stat-label { font-size: 0.82rem; color: var(--gray); margin-top: 4px; }
+    .stat-card.blue .stat-num { color: var(--primary); }
+    .stat-card.green .stat-num { color: var(--success); }
+    .stat-card.orange .stat-num { color: #fd7e14; }
+
+    /* ── CARD ── */
+    .card { background: #fff; border-radius: var(--radius); border: 1.5px solid var(--border); overflow: hidden; margin-bottom: 24px; }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .card-header h2 { font-size: 1rem; font-weight: 700; color: var(--navy); }
+    .card-body { padding: 20px; }
+
+    /* ── FORM ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label { font-size: 0.82rem; font-weight: 700; color: #333; }
+    .form-control {
+      padding: 10px 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 0.92rem; outline: none;
+      transition: border 0.18s; width: 100%;
+    }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,0.08); }
+    textarea.form-control { resize: vertical; min-height: 80px; }
+    .form-msg { font-size: 0.85rem; margin-top: 10px; padding: 8px 12px; border-radius: 6px; }
+    .form-msg.success { background: #d1fae5; color: #065f46; }
+    .form-msg.error   { background: #fee2e2; color: #991b1b; }
+
+    /* ── BUTTONS ── */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.18s; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: #0a58ca; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-danger  { background: var(--danger);  color: #fff; font-size: 0.8rem; padding: 5px 12px; }
+    .btn-warning { background: var(--warning); color: #333; font-size: 0.8rem; padding: 5px 12px; }
+    .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-sm { padding: 5px 12px; font-size: 0.8rem; border-radius: 6px; }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { background: #f8f9fa; padding: 10px 12px; text-align: left; font-weight: 700; color: var(--gray); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid var(--border); white-space: nowrap; }
+    td { padding: 12px; border-bottom: 1px solid var(--border); color: #333; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbff; }
+    .empty-row td { text-align: center; color: var(--gray); padding: 36px; font-size: 0.92rem; }
+
+    /* ── BADGES ── */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+    .badge-active   { background: #d1fae5; color: #065f46; }
+    .badge-inactive { background: #f3f4f6; color: #6b7280; }
+    .badge-filled   { background: #dbeafe; color: #1e40af; }
+    .badge-temp     { background: #fff3cd; color: #856404; }
+    .badge-full     { background: #d1e7dd; color: #0f5132; }
+    .badge-part     { background: #cff4fc; color: #055160; }
+    .badge-contract { background: #f8d7da; color: #842029; }
+
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 500; display: flex; align-items: center; justify-content: center;
+      padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #fff; border-radius: 16px; padding: 28px;
+      max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto;
+      transform: translateY(16px); transition: transform 0.22s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-title { font-size: 1.1rem; font-weight: 800; color: var(--navy); }
+    .modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--gray); }
+    .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 100%; position: relative; height: auto; }
+      .main { margin-left: 0; padding: 16px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🦷</div>
+    <h1>DentalHire NC</h1>
+    <p>Admin Dashboard — Enter your password</p>
+    <input type="password" class="login-input" id="adminPassword" placeholder="Admin password..." onkeydown="if(event.key==='Enter') login()" />
+    <button class="login-btn" onclick="login()">Sign In</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="app" id="app">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo"><span>🦷</span> Admin</div>
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">📊</span> Dashboard</div>
+    <div class="nav-section">Jobs</div>
+    <div class="nav-item" onclick="showPage('addJob',this)"><span class="icon">➕</span> Add Job</div>
+    <div class="nav-item" onclick="showPage('manageJobs',this)"><span class="icon">📋</span> Manage Jobs</div>
+    <div class="nav-section">People</div>
+    <div class="nav-item" onclick="showPage('workers',this)"><span class="icon">👤</span> Professionals</div>
+    <div class="nav-item" onclick="showPage('applications',this)"><span class="icon">📤</span> Applications</div>
+    <div class="nav-item" onclick="showPage('invitations',this)"><span class="icon">📨</span> Invitations</div>
+    <div class="sidebar-logout" onclick="logout()">🚪 Sign Out</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div><h1>Dashboard</h1><p>Welcome back! Here's what's happening.</p></div>
+        <button class="btn btn-primary" onclick="showPage('addJob', document.querySelectorAll('.nav-item')[2])">+ Add Job</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card blue"><div class="stat-num" id="s-jobs">—</div><div class="stat-label">Active Jobs</div></div>
+        <div class="stat-card green"><div class="stat-num" id="s-workers">—</div><div class="stat-label">Professionals</div></div>
+        <div class="stat-card orange"><div class="stat-num" id="s-applications">—</div><div class="stat-label">Applications</div></div>
+        <div class="stat-card"><div class="stat-num" id="s-invitations">—</div><div class="stat-label">Invitations</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Recent Jobs</h2><button class="btn btn-outline btn-sm" onclick="showPage('manageJobs', document.querySelectorAll('.nav-item')[3])">View All</button></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Position</th><th>Practice</th><th>City</th><th>Type</th><th>Status</th><th>Posted</th></tr></thead>
+          <tbody id="dashboard-jobs"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Recent Applications</h2><button class="btn btn-outline btn-sm" onclick="showPage('applications', document.querySelectorAll('.nav-item')[5])">View All</button></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Applicant</th><th>Email</th><th>Job</th><th>Practice</th><th>Date</th></tr></thead>
+          <tbody id="dashboard-apps"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ADD JOB -->
+    <div class="page" id="page-addJob">
+      <div class="page-header">
+        <div><h1>Add Job Listing</h1><p>Post a job directly — no payment required.</p></div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <form id="addJobForm" onsubmit="submitAddJob(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Practice / Office Name *</label>
+                <input type="text" class="form-control" name="practice" placeholder="e.g., Bright Smiles Dental" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Position *</label>
+                <select class="form-control" name="position" required>
+                  <option value="">Select role…</option>
+                  <option>Dental Hygienist (RDH)</option>
+                  <option>Dental Assistant (DA)</option>
+                  <option>Expanded Functions DA (EFDA)</option>
+                  <option>Front Desk / Receptionist</option>
+                  <option>Office Manager</option>
+                  <option>Treatment Coordinator</option>
+                  <option>Billing Specialist</option>
+                  <option>Dental Lab Tech</option>
+                  <option>Associate Dentist</option>
+                  <option>Orthodontic Assistant</option>
+                  <option>Oral Surgery Assistant</option>
+                  <option>Sterilization Tech</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Job Type *</label>
+                <select class="form-control" name="job_type" required>
+                  <option>Temp</option>
+                  <option>Part-Time</option>
+                  <option>Full-Time</option>
+                  <option>Contract</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">City *</label>
+                <select class="form-control" name="city" id="addJobCity" required>
+                  <option value="">Select city…</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Pay Rate</label>
+                <input type="text" class="form-control" name="pay_rate" placeholder="e.g., $35–$45/hr" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Dates / Schedule</label>
+                <input type="text" class="form-control" name="dates" placeholder="e.g., June 5–7 or Mon–Fri" />
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Job Description & Requirements</label>
+                <textarea class="form-control" name="description" placeholder="Software, experience required, specialty, hours…"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contact Name</label>
+                <input type="text" class="form-control" name="contact_name" placeholder="Office manager or dentist name" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contact Email</label>
+                <input type="email" class="form-control" name="contact_email" placeholder="contact@practice.com" />
+              </div>
+            </div>
+            <div id="addJobMsg"></div>
+            <div style="margin-top:20px;display:flex;gap:10px">
+              <button type="submit" class="btn btn-primary" id="addJobBtn">✅ Post Job Now</button>
+              <button type="reset" class="btn btn-outline">Clear</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGE JOBS -->
+    <div class="page" id="page-manageJobs">
+      <div class="page-header">
+        <div><h1>Manage Jobs</h1><p>Activate, deactivate, or delete listings.</p></div>
+        <button class="btn btn-primary" onclick="showPage('addJob', document.querySelectorAll('.nav-item')[2])">+ Add Job</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Position</th><th>Practice</th><th>City</th><th>Type</th><th>Pay</th><th>Status</th><th>Posted</th><th>Actions</th></tr></thead>
+          <tbody id="jobsTable"><tr class="empty-row"><td colspan="8">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- WORKERS -->
+    <div class="page" id="page-workers">
+      <div class="page-header">
+        <div><h1>Dental Professionals</h1><p>All registered professionals with full contact info.</p></div>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Name</th><th>Role</th><th>City</th><th>Email</th><th>Phone</th><th>Experience</th><th>License</th><th>Temp?</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody id="workersTable"><tr class="empty-row"><td colspan="10">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- APPLICATIONS -->
+    <div class="page" id="page-applications">
+      <div class="page-header">
+        <div><h1>Applications</h1><p>All job applications submitted through the platform.</p></div>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Applicant</th><th>Email</th><th>Phone</th><th>Job</th><th>Practice</th><th>City</th><th>Message</th><th>Date</th></tr></thead>
+          <tbody id="applicationsTable"><tr class="empty-row"><td colspan="8">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- INVITATIONS -->
+    <div class="page" id="page-invitations">
+      <div class="page-header">
+        <div><h1>Practice Invitations</h1><p>Invitations sent from practices to professionals.</p></div>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Practice</th><th>Practice Email</th><th>Role Needed</th><th>Professional (City)</th><th>Message</th><th>Date</th></tr></thead>
+          <tbody id="invitationsTable"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Confirm delete modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
+    <div class="modal-title" style="justify-content:center;margin-bottom:10px" id="confirmTitle">Delete this item?</div>
+    <p style="color:var(--gray);font-size:0.9rem;margin-bottom:24px" id="confirmMsg">This action cannot be undone.</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-danger" id="confirmYes">Yes, Delete</button>
+      <button class="btn btn-outline" onclick="closeConfirm()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = (window.location.hostname === 'localhost' || window.location.protocol === 'file:')
+  ? 'http://localhost:3002/api'
+  : '/api';
+
+const NC_CITIES = [
+  'Apex','Asheboro','Asheville','Boone','Burlington','Cary',
+  'Chapel Hill','Charlotte','Clayton','Concord','Cornelius',
+  'Durham','Fayetteville','Fuquay-Varina','Garner','Gastonia',
+  'Goldsboro','Graham','Greensboro','Greenville','Havelock',
+  'Hickory','High Point','Holly Springs','Huntersville',
+  'Indian Trail','Jacksonville','Kannapolis','Kernersville',
+  'Lumberton','Matthews','Mint Hill','Monroe','Mooresville',
+  'Morrisville','Mount Holly','New Bern','Pinehurst',
+  'Pittsboro','Raleigh','Rocky Mount','Salisbury','Sanford',
+  'Shelby','Statesville','Wake Forest','Wilmington','Wilson',
+  'Winston-Salem','Zebulon'
+];
+
+let adminToken = sessionStorage.getItem('adminToken') || '';
+
+// ── Login ──
+async function login() {
+  const pw = document.getElementById('adminPassword').value;
+  const err = document.getElementById('loginError');
+  err.textContent = '';
+  try {
+    const res = await fetch(`${API}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const data = await res.json();
+    if (!res.ok) { err.textContent = data.error; return; }
+    adminToken = data.token;
+    sessionStorage.setItem('adminToken', adminToken);
+    bootApp();
+  } catch {
+    err.textContent = 'Network error. Try again.';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('adminToken');
+  adminToken = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminPassword').value = '';
+}
+
+function bootApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  populateCities();
+  loadAll();
+}
+
+// ── Navigation ──
+function showPage(name, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  if (name === 'manageJobs') loadJobs();
+  if (name === 'workers') loadWorkers();
+  if (name === 'applications') loadApplications();
+  if (name === 'invitations') loadInvitations();
+}
+
+// ── Cities ──
+function populateCities() {
+  const sel = document.getElementById('addJobCity');
+  NC_CITIES.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+}
+
+// ── Auth header ──
+function authH() {
+  return { 'Content-Type': 'application/json', 'x-admin-token': adminToken };
+}
+
+// ── Load all ──
+async function loadAll() {
+  const [jobs, workers, apps, invs] = await Promise.all([
+    fetch(`${API}/admin/jobs`,         { headers: authH() }).then(r => r.json()).catch(() => ({ jobs: [] })),
+    fetch(`${API}/admin/workers`,      { headers: authH() }).then(r => r.json()).catch(() => ({ workers: [] })),
+    fetch(`${API}/admin/applications`, { headers: authH() }).then(r => r.json()).catch(() => ({ applications: [] })),
+    fetch(`${API}/admin/invitations`,  { headers: authH() }).then(r => r.json()).catch(() => ({ invitations: [] })),
+  ]);
+
+  const activeJobs = (jobs.jobs || []).filter(j => j.status === 'active');
+  document.getElementById('s-jobs').textContent = activeJobs.length;
+  document.getElementById('s-workers').textContent = (workers.workers || []).length;
+  document.getElementById('s-applications').textContent = (apps.applications || []).length;
+  document.getElementById('s-invitations').textContent = (invs.invitations || []).length;
+
+  // Dashboard recent jobs (5)
+  const recentJobs = (jobs.jobs || []).slice(0, 5);
+  document.getElementById('dashboard-jobs').innerHTML = recentJobs.length
+    ? recentJobs.map(j => `<tr>
+        <td><strong>${esc(j.position)}</strong></td>
+        <td>${esc(j.practice)}</td>
+        <td>${esc(j.city)}</td>
+        <td><span class="badge badge-${j.job_type === 'Full-Time' ? 'full' : j.job_type === 'Part-Time' ? 'part' : j.job_type === 'Contract' ? 'contract' : 'temp'}">${esc(j.job_type)}</span></td>
+        <td><span class="badge badge-${j.status}">${j.status}</span></td>
+        <td>${relDate(j.created_at)}</td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="6">No jobs yet. Click "Add Job" to post your first listing.</td></tr>';
+
+  // Dashboard recent apps (5)
+  const recentApps = (apps.applications || []).slice(0, 5);
+  document.getElementById('dashboard-apps').innerHTML = recentApps.length
+    ? recentApps.map(a => `<tr>
+        <td><strong>${esc(a.name)}</strong></td>
+        <td><a href="mailto:${esc(a.email)}">${esc(a.email)}</a></td>
+        <td>${esc(a.position)}</td>
+        <td>${esc(a.practice)}</td>
+        <td>${relDate(a.created_at)}</td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="5">No applications yet.</td></tr>';
+}
+
+// ── Jobs table ──
+async function loadJobs() {
+  const res = await fetch(`${API}/admin/jobs`, { headers: authH() });
+  const { jobs = [] } = await res.json();
+  document.getElementById('jobsTable').innerHTML = jobs.length
+    ? jobs.map(j => `<tr>
+        <td><strong>${esc(j.position)}</strong></td>
+        <td>${esc(j.practice)}</td>
+        <td>${esc(j.city)}</td>
+        <td><span class="badge badge-${j.job_type === 'Full-Time' ? 'full' : j.job_type === 'Part-Time' ? 'part' : j.job_type === 'Contract' ? 'contract' : 'temp'}">${esc(j.job_type)}</span></td>
+        <td>${esc(j.pay_rate || '—')}</td>
+        <td><span class="badge badge-${j.status}">${j.status}</span></td>
+        <td>${relDate(j.created_at)}</td>
+        <td>
+          <div class="actions">
+            ${j.status === 'active'
+              ? `<button class="btn btn-warning btn-sm" onclick="setJobStatus(${j.id},'inactive')">Deactivate</button>`
+              : `<button class="btn btn-success btn-sm" onclick="setJobStatus(${j.id},'active')">Activate</button>`}
+            <button class="btn btn-outline btn-sm" onclick="setJobStatus(${j.id},'filled')">Mark Filled</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDelete('job',${j.id},'${esc(j.position)} at ${esc(j.practice)}')">Delete</button>
+          </div>
+        </td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="8">No jobs yet.</td></tr>';
+}
+
+async function setJobStatus(id, status) {
+  await fetch(`${API}/admin/jobs/${id}`, {
+    method: 'PATCH',
+    headers: authH(),
+    body: JSON.stringify({ status })
+  });
+  loadJobs();
+  loadAll();
+}
+
+// ── Workers table ──
+async function loadWorkers() {
+  const res = await fetch(`${API}/admin/workers`, { headers: authH() });
+  const { workers = [] } = await res.json();
+  document.getElementById('workersTable').innerHTML = workers.length
+    ? workers.map(w => `<tr>
+        <td><strong>${esc(w.first_name)} ${esc(w.last_name)}</strong></td>
+        <td>${esc(w.role)}</td>
+        <td>${esc(w.city)}</td>
+        <td><a href="mailto:${esc(w.email)}">${esc(w.email)}</a></td>
+        <td>${w.phone ? `<a href="tel:${esc(w.phone)}">${esc(w.phone)}</a>` : '—'}</td>
+        <td>${esc(w.experience || '—')}</td>
+        <td>${w.license_number ? `<span style="color:var(--success);font-weight:600">${esc(w.license_number)}</span>` : '—'}</td>
+        <td style="font-size:0.8rem">${esc((w.temp_open || '').split('—')[0].trim() || '—')}</td>
+        <td>${relDate(w.created_at)}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="confirmDelete('worker',${w.id},'${esc(w.first_name)} ${esc(w.last_name)}')">Delete</button></td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="10">No professionals yet.</td></tr>';
+}
+
+// ── Applications table ──
+async function loadApplications() {
+  const res = await fetch(`${API}/admin/applications`, { headers: authH() });
+  const { applications = [] } = await res.json();
+  document.getElementById('applicationsTable').innerHTML = applications.length
+    ? applications.map(a => `<tr>
+        <td><strong>${esc(a.name)}</strong></td>
+        <td><a href="mailto:${esc(a.email)}">${esc(a.email)}</a></td>
+        <td>${a.phone ? `<a href="tel:${esc(a.phone)}">${esc(a.phone)}</a>` : '—'}</td>
+        <td>${esc(a.position)}</td>
+        <td>${esc(a.practice)}</td>
+        <td>${esc(a.city)}</td>
+        <td style="max-width:200px;font-size:0.82rem;color:#555">${esc((a.message || '—').slice(0,100))}${(a.message||'').length > 100 ? '…' : ''}</td>
+        <td>${relDate(a.created_at)}</td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="8">No applications yet.</td></tr>';
+}
+
+// ── Invitations table ──
+async function loadInvitations() {
+  const res = await fetch(`${API}/admin/invitations`, { headers: authH() });
+  const { invitations = [] } = await res.json();
+  document.getElementById('invitationsTable').innerHTML = invitations.length
+    ? invitations.map(i => `<tr>
+        <td><strong>${esc(i.practice_name)}</strong></td>
+        <td><a href="mailto:${esc(i.practice_email)}">${esc(i.practice_email)}</a></td>
+        <td>${esc(i.role_needed || '—')}</td>
+        <td>${esc(i.role)} (${esc(i.city)})</td>
+        <td style="max-width:200px;font-size:0.82rem;color:#555">${esc((i.message || '—').slice(0,100))}${(i.message||'').length > 100 ? '…' : ''}</td>
+        <td>${relDate(i.created_at)}</td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="6">No invitations yet.</td></tr>';
+}
+
+// ── Add Job ──
+async function submitAddJob(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('addJobBtn');
+  const msg = document.getElementById('addJobMsg');
+  const body = Object.fromEntries(new FormData(form));
+  btn.disabled = true; btn.textContent = 'Posting…'; msg.innerHTML = '';
+
+  try {
+    const res = await fetch(`${API}/admin/jobs`, {
+      method: 'POST',
+      headers: authH(),
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      msg.innerHTML = `<div class="form-msg error">⚠️ ${esc(data.error)}</div>`;
+      return;
+    }
+    msg.innerHTML = `<div class="form-msg success">✅ Job posted! It's live on the site now.</div>`;
+    form.reset();
+    loadAll();
+  } catch {
+    msg.innerHTML = `<div class="form-msg error">⚠️ Network error. Try again.</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ Post Job Now';
+  }
+}
+
+// ── Confirm delete ──
+let pendingDelete = null;
+function confirmDelete(type, id, label) {
+  pendingDelete = { type, id };
+  document.getElementById('confirmTitle').textContent = `Delete "${label}"?`;
+  document.getElementById('confirmMsg').textContent = type === 'job'
+    ? 'This will permanently remove the job listing and all its applications.'
+    : 'This will permanently remove this professional\'s profile.';
+  document.getElementById('confirmYes').onclick = doDelete;
+  document.getElementById('confirmModal').classList.add('open');
+}
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.remove('open');
+  pendingDelete = null;
+}
+async function doDelete() {
+  if (!pendingDelete) return;
+  const { type, id } = pendingDelete;
+  closeConfirm();
+  await fetch(`${API}/admin/${type === 'job' ? 'jobs' : 'workers'}/${id}`, {
+    method: 'DELETE', headers: authH()
+  });
+  if (type === 'job') loadJobs();
+  else loadWorkers();
+  loadAll();
+}
+
+// ── Helpers ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function relDate(iso) {
+  if (!iso) return '—';
+  const d = Math.floor((Date.now() - new Date(iso)) / 86400000);
+  if (d === 0) return 'Today'; if (d === 1) return 'Yesterday';
+  return d + ' days ago';
+}
+
+// ── Auto-login if token saved ──
+if (adminToken) {
+  fetch(`${API}/admin/jobs`, { headers: { 'x-admin-token': adminToken } })
+    .then(r => { if (r.ok) bootApp(); else { sessionStorage.removeItem('adminToken'); adminToken = ''; } })
+    .catch(() => {});
+}
+
+document.getElementById('adminPassword').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+document.getElementById('confirmModal').addEventListener('click', e => { if (e.target === document.getElementById('confirmModal')) closeConfirm(); });
+</script>
+</body>
+</html>
