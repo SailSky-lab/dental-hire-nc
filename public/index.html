@@ -207,6 +207,25 @@
     .skeleton-card { background: #fff; border-radius: var(--radius); padding: 24px; border: 1.5px solid var(--border); }
 
     /* ── HOW IT WORKS ── */
+    /* ── Availability Board ── */
+    .avail-section { padding: 64px 24px; background: #fff; }
+    .avail-inner { max-width: 1100px; margin: 0 auto; }
+    .avail-filters { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 28px; align-items: center; }
+    .avail-filters select { padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.88rem; outline: none; color: #333; }
+    .avail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+    .avail-card {
+      background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
+      padding: 20px; transition: all 0.2s; position: relative;
+    }
+    .avail-card:hover { border-color: var(--primary); box-shadow: 0 4px 20px rgba(13,110,253,0.1); transform: translateY(-2px); }
+    .avail-role { font-size: 1.05rem; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
+    .avail-city { font-size: 0.88rem; color: var(--gray); margin-bottom: 10px; }
+    .avail-dates { font-size: 0.85rem; background: #f0f6ff; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; color: var(--navy); }
+    .avail-notes { font-size: 0.82rem; color: #555; line-height: 1.55; margin-bottom: 14px; }
+    .avail-privacy { font-size: 0.75rem; color: var(--gray); margin-bottom: 12px; }
+    .avail-empty { text-align: center; padding: 48px 20px; color: var(--gray); grid-column: 1 / -1; }
+    .avail-empty .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+
     .how-section { padding: 72px 24px; background: #fff; }
     .how-inner { max-width: 1000px; margin: 0 auto; }
     .how-tabs { display: flex; gap: 0; margin-bottom: 40px; border-radius: 12px; overflow: hidden; border: 2px solid var(--primary); max-width: 380px; margin-left: auto; margin-right: auto; }
@@ -485,6 +504,7 @@
     </a>
     <div class="nav-links" id="navLinks">
       <a href="#jobs">Browse Jobs</a>
+      <a href="#availability">Who's Available</a>
       <a href="#professionals">Find Staff</a>
       <a href="#how">How It Works</a>
       <a href="#pricing">Pricing</a>
@@ -580,6 +600,37 @@
   </div>
 </section>
 
+<!-- AVAILABILITY BOARD -->
+<section class="avail-section" id="availability">
+  <div class="avail-inner">
+    <div class="section-title">
+      <div class="label">Open to Work</div>
+      <h2>Who's Available in NC</h2>
+      <p>Dental professionals sharing their availability — anonymously. No names, no contact info. Just when and where they can work.</p>
+    </div>
+
+    <div class="avail-filters">
+      <div class="filter-chip active" onclick="setAvailFilter(this,'all')">All Types</div>
+      <div class="filter-chip" onclick="setAvailFilter(this,'Temp')">⚡ Temp / Per Diem</div>
+      <div class="filter-chip" onclick="setAvailFilter(this,'Full-Time')">Full-Time</div>
+      <div class="filter-chip" onclick="setAvailFilter(this,'Part-Time')">Part-Time</div>
+      <div class="filter-chip" onclick="setAvailFilter(this,'Contract')">Contract</div>
+      <select id="availCityFilter" onchange="applyAvailFilters()" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;outline:none;color:#333">
+        <option value="">📍 All NC Cities</option>
+      </select>
+    </div>
+
+    <div class="avail-grid" id="availGrid">
+      <div class="avail-empty"><div class="empty-icon">⏳</div>Loading…</div>
+    </div>
+
+    <div style="text-align:center;margin-top:36px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-success" onclick="openModal('availModal')">📅 Post My Availability — Free</button>
+      <button class="btn btn-outline" onclick="openModal('removeAvailModal')">Remove My Listing</button>
+    </div>
+  </div>
+</section>
+
 <!-- WORKER PROFILES -->
 <section class="profiles-section" id="professionals">
   <div class="profiles-inner">
@@ -603,12 +654,12 @@
         </div>
       </div>
       <div id="tokenEntry" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-        <div style="font-size:0.85rem;color:var(--gray);margin-bottom:8px">Enter your subscriber access code (emailed when you subscribed):</div>
+        <div style="font-size:0.85rem;color:var(--gray);margin-bottom:8px">Enter the email your practice subscribed with:</div>
         <div class="subscriber-form">
-          <input type="text" class="subscriber-input" id="subscriberTokenInput" placeholder="Enter access code..." />
+          <input type="email" class="subscriber-input" id="subscriberTokenInput" placeholder="you@practice.com" />
           <button class="btn btn-primary" onclick="unlockProfiles()" style="padding:10px 20px">Unlock</button>
         </div>
-        <div id="tokenError" style="font-size:0.82rem;color:var(--danger);margin-top:8px;display:none">Incorrect code. Check your subscription confirmation email.</div>
+        <div id="tokenError" style="font-size:0.82rem;color:var(--danger);margin-top:8px;display:none">No active subscription found for that email.</div>
       </div>
     </div>
 
@@ -1147,10 +1198,105 @@
       </div>
       <div id="subscribeMsg"></div>
       <div class="modal-footer">
-        <button type="submit" class="btn btn-primary" style="flex:1">Continue to Payment ($80/mo) →</button>
+        <button type="submit" class="btn btn-primary" id="subscribeBtn" style="flex:1">Continue to Payment ($80/mo) →</button>
         <button type="button" class="btn btn-outline" onclick="closeModal('subscribeModal')">Cancel</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- MODAL: Post Availability -->
+<div class="modal-overlay" id="availModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📅 Post My Availability</div>
+      <button class="modal-close" onclick="closeModal('availModal')">✕</button>
+    </div>
+    <p style="font-size:0.88rem;color:var(--gray);margin-bottom:20px">Your name and contact info stay private. Practices see only your role, city, job type, and dates.</p>
+    <form id="availForm" onsubmit="submitAvailability(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Your Role <span class="req">*</span></label>
+          <select class="form-control" name="role" required>
+            <option value="">Select role…</option>
+            <option>Dental Hygienist (RDH)</option>
+            <option>Dental Assistant (DA)</option>
+            <option>Expanded Functions DA (EFDA)</option>
+            <option>Front Desk / Receptionist</option>
+            <option>Office Manager</option>
+            <option>Treatment Coordinator</option>
+            <option>Billing Specialist</option>
+            <option>Dental Lab Tech</option>
+            <option>Associate Dentist</option>
+            <option>Orthodontic Assistant</option>
+            <option>Oral Surgery Assistant</option>
+            <option>Sterilization Tech</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Job Type <span class="req">*</span></label>
+          <select class="form-control" name="job_type" required>
+            <option>Temp</option>
+            <option>Part-Time</option>
+            <option>Full-Time</option>
+            <option>Contract</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">City <span class="req">*</span></label>
+        <select class="form-control" name="city" required>
+          <option value="">Select city…</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Available From <span class="req">*</span></label>
+          <input type="date" class="form-control" name="available_from" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Available Until</label>
+          <input type="date" class="form-control" name="available_to" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Short Note <span style="font-weight:400;color:var(--gray)">(optional — no personal info)</span></label>
+        <input type="text" class="form-control" name="notes" placeholder="e.g., Experienced with Eaglesoft, open to multi-day" maxlength="120" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your Email <span class="req">*</span></label>
+        <input type="email" class="form-control" name="email" placeholder="Used only to manage your listing — never shown publicly" required />
+      </div>
+      <div id="availMsg"></div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-success" id="availBtn" style="flex:1">Post Availability →</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('availModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Remove Availability -->
+<div class="modal-overlay" id="removeAvailModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Remove My Listing</div>
+      <button class="modal-close" onclick="closeModal('removeAvailModal')">✕</button>
+    </div>
+    <p style="font-size:0.88rem;color:var(--gray);margin-bottom:20px">Enter the email and the listing ID you want to remove. Your listing ID was shown when you posted your availability.</p>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Listing ID <span class="req">*</span></label>
+      <input type="number" class="form-control" id="removeAvailId" placeholder="e.g., 3" required />
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Your Email <span class="req">*</span></label>
+      <input type="email" class="form-control" id="removeAvailEmail" placeholder="Same email you used to post" required />
+    </div>
+    <div id="removeAvailMsg"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="removeAvailability()" id="removeAvailBtn" style="flex:1">Remove Listing</button>
+      <button class="btn btn-outline" onclick="closeModal('removeAvailModal')">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -1218,18 +1364,38 @@ const AVATAR_COLORS = [
 
 // ── STATE ──
 let allJobs = [];
+let allAvailability = [];
 let activeFilter = 'all';
+let activeAvailFilter = 'all';
 let pendingJobId = null;
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
   populateCityDropdowns();
   loadJobs();
+  loadAvailability();
   tryAutoUnlock();
+  handleCheckoutRedirect();
 });
 
+function handleCheckoutRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('job_paid')) {
+    showToast('Payment received! Your job listing is now live.', 'success');
+  } else if (params.has('job_canceled')) {
+    showToast('Checkout canceled — your job was saved but is not live yet.', 'error');
+  } else if (params.has('sub_active')) {
+    showToast('Subscription active! Enter your email above to unlock professional profiles.', 'success');
+  } else if (params.has('sub_canceled')) {
+    showToast('Subscription checkout canceled.', 'error');
+  } else {
+    return;
+  }
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
 function populateCityDropdowns() {
-  const selects = document.querySelectorAll('select[name="city"], #searchCity');
+  const selects = document.querySelectorAll('select[name="city"], #searchCity, #availCityFilter');
   selects.forEach(sel => {
     NC_CITIES.forEach(city => {
       const opt = document.createElement('option');
@@ -1320,6 +1486,129 @@ function applyFilters() {
   renderJobs(filtered);
 }
 
+// ── AVAILABILITY BOARD ──
+async function loadAvailability() {
+  try {
+    const res = await fetch(`${API}/availability`);
+    const data = await res.json();
+    allAvailability = data.availability || [];
+    renderAvailability(allAvailability);
+  } catch {
+    renderAvailability([]);
+  }
+}
+
+function setAvailFilter(el, filter) {
+  document.querySelectorAll('#availability .filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  activeAvailFilter = filter;
+  applyAvailFilters();
+}
+
+function applyAvailFilters() {
+  const city = document.getElementById('availCityFilter').value;
+  const filtered = allAvailability.filter(a => {
+    const matchType = activeAvailFilter === 'all' || a.job_type === activeAvailFilter;
+    const matchCity = !city || a.city === city;
+    return matchType && matchCity;
+  });
+  renderAvailability(filtered);
+}
+
+function renderAvailability(items) {
+  const grid = document.getElementById('availGrid');
+  if (!items.length) {
+    grid.innerHTML = `<div class="avail-empty"><div class="empty-icon">📅</div><strong>No availability posted yet.</strong><br><small>Be the first — click "Post My Availability" below.</small></div>`;
+    return;
+  }
+  const TYPE_BADGES = { Temp: 'badge-Temp', 'Part-Time': 'badge-Part-Time', 'Full-Time': 'badge-Full-Time', Contract: 'badge-Contract' };
+  grid.innerHTML = items.map(a => {
+    const dateRange = a.available_to
+      ? `${fmtDate(a.available_from)} → ${fmtDate(a.available_to)}`
+      : `From ${fmtDate(a.available_from)}`;
+    const notesHtml = a.notes ? `<div class="avail-notes">${escHtml(a.notes)}</div>` : '';
+    const badgeClass = a.job_type === 'Full-Time' ? 'badge-Full-Time' : a.job_type === 'Part-Time' ? 'badge-Part-Time' : a.job_type === 'Contract' ? 'badge-Contract' : 'badge-Temp';
+    return `
+      <div class="avail-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div class="avail-role">${escHtml(a.role)}</div>
+          <span class="job-type-badge ${badgeClass}" style="font-size:0.7rem">${escHtml(a.job_type)}</span>
+        </div>
+        <div class="avail-city">📍 ${escHtml(a.city)}, NC</div>
+        <div class="avail-dates">📅 ${escHtml(dateRange)}</div>
+        ${notesHtml}
+        <div class="avail-privacy">🔒 Anonymous — contact info not shown</div>
+        <button class="btn btn-outline" style="width:100%;font-size:0.84rem;padding:8px"
+          onclick="openInvite(0,'${escAttr(a.role)}','${escAttr(a.city)}')">
+          I'm Interested — Contact Through Platform →
+        </button>
+      </div>`;
+  }).join('');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try { return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  catch { return iso; }
+}
+
+async function submitAvailability(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('availBtn');
+  const msg = document.getElementById('availMsg');
+  const body = Object.fromEntries(new FormData(form));
+  btn.disabled = true; btn.textContent = 'Posting…'; msg.innerHTML = '';
+  try {
+    const res = await fetch(`${API}/availability`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      msg.innerHTML = `<div class="form-msg error">⚠️ ${escHtml(data.error)}</div>`;
+      return;
+    }
+    msg.innerHTML = `<div class="form-msg success">✅ Posted! Your listing ID is <strong>#${data.id}</strong> — save this to remove your listing later.</div>`;
+    form.reset();
+    loadAvailability();
+  } catch {
+    msg.innerHTML = `<div class="form-msg error">⚠️ Network error. Try again.</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Post Availability →';
+  }
+}
+
+async function removeAvailability() {
+  const id = document.getElementById('removeAvailId').value.trim();
+  const email = document.getElementById('removeAvailEmail').value.trim();
+  const btn = document.getElementById('removeAvailBtn');
+  const msg = document.getElementById('removeAvailMsg');
+  if (!id || !email) { msg.innerHTML = `<div class="form-msg error">Please fill in both fields.</div>`; return; }
+  btn.disabled = true; btn.textContent = 'Removing…'; msg.innerHTML = '';
+  try {
+    const res = await fetch(`${API}/availability/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      msg.innerHTML = `<div class="form-msg error">⚠️ ${escHtml(data.error)}</div>`;
+      return;
+    }
+    msg.innerHTML = `<div class="form-msg success">✅ Your listing has been removed.</div>`;
+    document.getElementById('removeAvailId').value = '';
+    document.getElementById('removeAvailEmail').value = '';
+    loadAvailability();
+  } catch {
+    msg.innerHTML = `<div class="form-msg error">⚠️ Network error. Try again.</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Remove Listing';
+  }
+}
+
 // ── WORKERS / SUBSCRIBER GATE ──
 let subscriberToken = sessionStorage.getItem('dhncToken') || '';
 
@@ -1335,7 +1624,7 @@ async function unlockProfiles() {
 
   try {
     const res = await fetch(`${API}/workers/profiles`, {
-      headers: { 'x-subscriber-token': token }
+      headers: { 'x-subscriber-email': token }
     });
     if (!res.ok) {
       document.getElementById('tokenError').style.display = 'block';
@@ -1355,7 +1644,7 @@ async function tryAutoUnlock() {
   if (!subscriberToken) return;
   try {
     const res = await fetch(`${API}/workers/profiles`, {
-      headers: { 'x-subscriber-token': subscriberToken }
+      headers: { 'x-subscriber-email': subscriberToken }
     });
     if (res.ok) {
       const data = await res.json();
@@ -1432,16 +1721,17 @@ async function submitJob(e) {
     }
 
     pendingJobId = data.job?.id;
-    msg.innerHTML = `<div class="form-success">✅ Job saved! Proceeding to secure payment…</div>`;
+    msg.innerHTML = `<div class="form-success">✅ Job saved! Redirecting to secure payment…</div>`;
+    btn.textContent = 'Redirecting…';
     form.reset();
 
-    setTimeout(() => {
-      closeModal('postModal');
-      showToast('Job posted! Complete payment to go live.', 'success');
-      loadJobs();
-      // 🔗 Replace with your Stripe Payment Link:
-      // window.open('https://buy.stripe.com/YOUR_LINK?client_reference_id=' + pendingJobId, '_blank');
-    }, 1400);
+    const checkoutRes = await fetch(`${API}/checkout/job/${pendingJobId}`, { method: 'POST' });
+    const checkoutData = await checkoutRes.json();
+    if (!checkoutRes.ok || !checkoutData.url) {
+      msg.innerHTML = `<div class="form-error">⚠️ ${escHtml(checkoutData.error || 'Could not start checkout. Please try again.')}</div>`;
+      return;
+    }
+    window.location.href = checkoutData.url;
 
   } catch {
     msg.innerHTML = `<div class="form-error">⚠️ Network error. Please try again.</div>`;
@@ -1706,12 +1996,39 @@ async function submitInvite(e) {
 }
 
 // ── FORM: Subscribe ──
-function submitSubscribe(e) {
+async function submitSubscribe(e) {
   e.preventDefault();
-  closeModal('subscribeModal');
-  showToast('Redirecting to subscription checkout…', 'success');
-  // 🔗 Replace with your Stripe subscription link:
-  // window.open('https://buy.stripe.com/YOUR_SUBSCRIPTION_LINK', '_blank');
+  const form = e.target;
+  const btn = document.getElementById('subscribeBtn');
+  const msg = document.getElementById('subscribeMsg');
+
+  const fields = Object.fromEntries(new FormData(form));
+  const body = { practice_name: fields.practice, email: fields.email, phone: fields.phone };
+
+  btn.disabled = true;
+  btn.textContent = 'Redirecting…';
+  msg.innerHTML = '';
+
+  try {
+    const res = await fetch(`${API}/checkout/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.url) {
+      msg.innerHTML = `<div class="form-error">⚠️ ${escHtml(data.error || 'Could not start checkout. Please try again.')}</div>`;
+      return;
+    }
+    window.location.href = data.url;
+
+  } catch {
+    msg.innerHTML = `<div class="form-error">⚠️ Network error. Please try again.</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Continue to Payment ($80/mo) →';
+  }
 }
 
 // ── MODALS ──

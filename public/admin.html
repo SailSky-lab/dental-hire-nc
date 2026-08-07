@@ -198,8 +198,11 @@
     <div class="nav-item" onclick="showPage('manageJobs',this)"><span class="icon">📋</span> Manage Jobs</div>
     <div class="nav-section">People</div>
     <div class="nav-item" onclick="showPage('workers',this)"><span class="icon">👤</span> Professionals</div>
+    <div class="nav-item" onclick="showPage('availability',this)"><span class="icon">📅</span> Availability</div>
     <div class="nav-item" onclick="showPage('applications',this)"><span class="icon">📤</span> Applications</div>
     <div class="nav-item" onclick="showPage('invitations',this)"><span class="icon">📨</span> Invitations</div>
+    <div class="nav-section">Billing</div>
+    <div class="nav-item" onclick="showPage('subscriptions',this)"><span class="icon">💳</span> Subscriptions</div>
     <div class="sidebar-logout" onclick="logout()">🚪 Sign Out</div>
   </div>
 
@@ -217,6 +220,8 @@
         <div class="stat-card green"><div class="stat-num" id="s-workers">—</div><div class="stat-label">Professionals</div></div>
         <div class="stat-card orange"><div class="stat-num" id="s-applications">—</div><div class="stat-label">Applications</div></div>
         <div class="stat-card"><div class="stat-num" id="s-invitations">—</div><div class="stat-label">Invitations</div></div>
+        <div class="stat-card green"><div class="stat-num" id="s-subscriptions">—</div><div class="stat-label">Active Subscribers</div></div>
+        <div class="stat-card blue"><div class="stat-num" id="s-availability">—</div><div class="stat-label">Availability Posts</div></div>
       </div>
       <div class="card">
         <div class="card-header"><h2>Recent Jobs</h2><button class="btn btn-outline btn-sm" onclick="showPage('manageJobs', document.querySelectorAll('.nav-item')[3])">View All</button></div>
@@ -338,6 +343,19 @@
       </div>
     </div>
 
+    <!-- AVAILABILITY -->
+    <div class="page" id="page-availability">
+      <div class="page-header">
+        <div><h1>Availability Board</h1><p>All anonymous availability listings posted by dental professionals.</p></div>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Role</th><th>City</th><th>Type</th><th>From</th><th>Until</th><th>Notes</th><th>Email (admin only)</th><th>Posted</th><th>Actions</th></tr></thead>
+          <tbody id="availabilityTable"><tr class="empty-row"><td colspan="9">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
     <!-- APPLICATIONS -->
     <div class="page" id="page-applications">
       <div class="page-header">
@@ -360,6 +378,19 @@
         <div class="table-wrap"><table>
           <thead><tr><th>Practice</th><th>Practice Email</th><th>Role Needed</th><th>Professional (City)</th><th>Message</th><th>Date</th></tr></thead>
           <tbody id="invitationsTable"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTIONS -->
+    <div class="page" id="page-subscriptions">
+      <div class="page-header">
+        <div><h1>Practice Subscriptions</h1><p>Practices paying $80/mo for unlimited job posts + unlocked professional contact info.</p></div>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Practice</th><th>Email</th><th>Phone</th><th>Status</th><th>Renews / Ended</th><th>Since</th></tr></thead>
+          <tbody id="subscriptionsTable"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
         </table></div>
       </div>
     </div>
@@ -445,8 +476,10 @@ function showPage(name, navEl) {
   if (navEl) navEl.classList.add('active');
   if (name === 'manageJobs') loadJobs();
   if (name === 'workers') loadWorkers();
+  if (name === 'availability') loadAvailabilityAdmin();
   if (name === 'applications') loadApplications();
   if (name === 'invitations') loadInvitations();
+  if (name === 'subscriptions') loadSubscriptions();
 }
 
 // ── Cities ──
@@ -466,11 +499,13 @@ function authH() {
 
 // ── Load all ──
 async function loadAll() {
-  const [jobs, workers, apps, invs] = await Promise.all([
-    fetch(`${API}/admin/jobs`,         { headers: authH() }).then(r => r.json()).catch(() => ({ jobs: [] })),
-    fetch(`${API}/admin/workers`,      { headers: authH() }).then(r => r.json()).catch(() => ({ workers: [] })),
-    fetch(`${API}/admin/applications`, { headers: authH() }).then(r => r.json()).catch(() => ({ applications: [] })),
-    fetch(`${API}/admin/invitations`,  { headers: authH() }).then(r => r.json()).catch(() => ({ invitations: [] })),
+  const [jobs, workers, apps, invs, subs, avail] = await Promise.all([
+    fetch(`${API}/admin/jobs`,          { headers: authH() }).then(r => r.json()).catch(() => ({ jobs: [] })),
+    fetch(`${API}/admin/workers`,       { headers: authH() }).then(r => r.json()).catch(() => ({ workers: [] })),
+    fetch(`${API}/admin/applications`,  { headers: authH() }).then(r => r.json()).catch(() => ({ applications: [] })),
+    fetch(`${API}/admin/invitations`,   { headers: authH() }).then(r => r.json()).catch(() => ({ invitations: [] })),
+    fetch(`${API}/admin/subscriptions`, { headers: authH() }).then(r => r.json()).catch(() => ({ subscriptions: [] })),
+    fetch(`${API}/admin/availability`,  { headers: authH() }).then(r => r.json()).catch(() => ({ availability: [] })),
   ]);
 
   const activeJobs = (jobs.jobs || []).filter(j => j.status === 'active');
@@ -478,6 +513,8 @@ async function loadAll() {
   document.getElementById('s-workers').textContent = (workers.workers || []).length;
   document.getElementById('s-applications').textContent = (apps.applications || []).length;
   document.getElementById('s-invitations').textContent = (invs.invitations || []).length;
+  document.getElementById('s-subscriptions').textContent = (subs.subscriptions || []).filter(s => s.status === 'active').length;
+  document.getElementById('s-availability').textContent = (avail.availability || []).length;
 
   // Dashboard recent jobs (5)
   const recentJobs = (jobs.jobs || []).slice(0, 5);
@@ -561,6 +598,31 @@ async function loadWorkers() {
     : '<tr class="empty-row"><td colspan="10">No professionals yet.</td></tr>';
 }
 
+// ── Availability table ──
+async function loadAvailabilityAdmin() {
+  const res = await fetch(`${API}/admin/availability`, { headers: authH() });
+  const { availability = [] } = await res.json();
+  document.getElementById('availabilityTable').innerHTML = availability.length
+    ? availability.map(a => `<tr>
+        <td><strong>${esc(a.role)}</strong></td>
+        <td>${esc(a.city)}</td>
+        <td><span class="badge badge-${a.job_type === 'Full-Time' ? 'full' : a.job_type === 'Part-Time' ? 'part' : a.job_type === 'Contract' ? 'contract' : 'temp'}">${esc(a.job_type)}</span></td>
+        <td>${esc(a.available_from)}</td>
+        <td>${esc(a.available_to || '—')}</td>
+        <td style="max-width:180px;font-size:0.82rem">${esc(a.notes || '—')}</td>
+        <td><a href="mailto:${esc(a.email)}">${esc(a.email)}</a></td>
+        <td>${relDate(a.created_at)}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteAvailAdmin(${a.id})">Delete</button></td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="9">No availability listings yet.</td></tr>';
+}
+
+async function deleteAvailAdmin(id) {
+  if (!confirm('Delete this availability listing?')) return;
+  await fetch(`${API}/admin/availability/${id}`, { method: 'DELETE', headers: authH() });
+  loadAvailabilityAdmin();
+}
+
 // ── Applications table ──
 async function loadApplications() {
   const res = await fetch(`${API}/admin/applications`, { headers: authH() });
@@ -593,6 +655,22 @@ async function loadInvitations() {
         <td>${relDate(i.created_at)}</td>
       </tr>`).join('')
     : '<tr class="empty-row"><td colspan="6">No invitations yet.</td></tr>';
+}
+
+// ── Subscriptions table ──
+async function loadSubscriptions() {
+  const res = await fetch(`${API}/admin/subscriptions`, { headers: authH() });
+  const { subscriptions = [] } = await res.json();
+  document.getElementById('subscriptionsTable').innerHTML = subscriptions.length
+    ? subscriptions.map(s => `<tr>
+        <td><strong>${esc(s.practice_name || '—')}</strong></td>
+        <td><a href="mailto:${esc(s.email)}">${esc(s.email)}</a></td>
+        <td>${s.phone ? `<a href="tel:${esc(s.phone)}">${esc(s.phone)}</a>` : '—'}</td>
+        <td><span class="badge badge-${s.status === 'active' ? 'active' : 'inactive'}">${esc(s.status)}</span></td>
+        <td>${s.current_period_end ? relDate(s.current_period_end) : '—'}</td>
+        <td>${relDate(s.created_at)}</td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="6">No subscribers yet.</td></tr>';
 }
 
 // ── Add Job ──
