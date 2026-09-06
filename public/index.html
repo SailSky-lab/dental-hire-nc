@@ -646,7 +646,7 @@
         <span style="font-size:1.3rem">🔒</span>
         <div style="flex:1;min-width:200px">
           <strong style="color:var(--navy);font-size:0.95rem">Subscriber Access Required</strong>
-          <div style="font-size:0.82rem;color:var(--gray);margin-top:2px">Post a job ($10) or subscribe ($80/mo) to view available professionals and send invitations.</div>
+          <div style="font-size:0.82rem;color:var(--gray);margin-top:2px">Post a job ($10) or subscribe ($79/mo) to view available professionals and send invitations.</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <a href="#" onclick="openModal('postModal')" class="btn btn-primary" style="padding:8px 18px;font-size:0.88rem">Post a Job — $10</a>
@@ -677,7 +677,7 @@
         <p>Post a job or subscribe to see full profiles, send invitations, and get matched with available professionals near you. Contact info is always protected — all communication goes through DentalHire NC.</p>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
           <a href="#" onclick="openModal('postModal')" class="btn btn-primary">Post a Job — $10</a>
-          <a href="#" onclick="openModal('subscribeModal')" class="btn btn-outline">Subscribe — $80/mo</a>
+          <a href="#" onclick="openModal('subscribeModal')" class="btn btn-outline">Subscribe — $79/mo</a>
         </div>
       </div>
     </div>
@@ -774,16 +774,16 @@
       </div>
       <div class="pricing-card">
         <div class="pricing-label">Monthly Unlimited</div>
-        <div class="pricing-price">$80 <span>/ month</span></div>
-        <div class="pricing-desc">Best for busy offices that need frequent temp coverage.</div>
+        <div class="pricing-price">$79 <span>/ month</span></div>
+        <div class="pricing-desc">Best for busy offices that need frequent temp coverage and shift booking.</div>
         <ul class="pricing-features">
           <li>Unlimited job posts</li>
-          <li>Priority listing placement</li>
-          <li>Browse worker profiles directly</li>
-          <li>Dedicated office profile page</li>
+          <li>Browse verified professional profiles</li>
+          <li>Send shift requests directly through platform</li>
+          <li>See ratings &amp; verified reviews</li>
           <li>Cancel anytime</li>
         </ul>
-        <a href="#" onclick="openModal('subscribeModal')" class="btn btn-outline" style="width:100%">Subscribe — $80/mo</a>
+        <a href="#" onclick="openModal('subscribeModal')" class="btn btn-outline" style="width:100%">Subscribe — $79/mo</a>
       </div>
     </div>
     <p style="text-align:center;color:var(--gray);font-size:0.85rem;margin-top:24px;">
@@ -1179,7 +1179,7 @@
     <div class="modal-payment-box">
       <h4>Monthly Subscription</h4>
       <p>Unlimited job posts · Priority placement · Cancel anytime</p>
-      <span class="price-highlight">$80 / month</span>
+      <span class="price-highlight">$79 / month</span>
     </div>
     <form id="subscribeForm" onsubmit="submitSubscribe(event)">
       <div class="form-group">
@@ -1198,7 +1198,7 @@
       </div>
       <div id="subscribeMsg"></div>
       <div class="modal-footer">
-        <button type="submit" class="btn btn-primary" id="subscribeBtn" style="flex:1">Continue to Payment ($80/mo) →</button>
+        <button type="submit" class="btn btn-primary" id="subscribeBtn" style="flex:1">Continue to Payment ($79/mo) →</button>
         <button type="button" class="btn btn-outline" onclick="closeModal('subscribeModal')">Cancel</button>
       </div>
     </form>
@@ -1297,6 +1297,106 @@
       <button class="btn btn-danger" onclick="removeAvailability()" id="removeAvailBtn" style="flex:1">Remove Listing</button>
       <button class="btn btn-outline" onclick="closeModal('removeAvailModal')">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: Request a Shift -->
+<div class="modal-overlay" id="shiftModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="shiftModalTitle">📅 Request a Shift</div>
+      <button class="modal-close" onclick="closeModal('shiftModal')">✕</button>
+    </div>
+    <p style="font-size:0.88rem;color:var(--gray);margin-bottom:18px">Send a shift request directly through the platform. The professional will accept or decline — no contact info exchanged until both parties agree.</p>
+    <form id="shiftForm" onsubmit="submitShiftRequest(event)">
+      <input type="hidden" id="shiftWorkerId" name="worker_id" />
+      <div class="form-group">
+        <label class="form-label">Your Practice Name <span class="req">*</span></label>
+        <input type="text" class="form-control" name="practice_name" placeholder="e.g., Bright Smiles Family Dentistry" required />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Position Needed <span class="req">*</span></label>
+          <select class="form-control" name="position" required>
+            <option value="">Select…</option>
+            <option>Dental Hygienist (RDH)</option>
+            <option>Dental Assistant (DA)</option>
+            <option>Expanded Functions DA (EFDA)</option>
+            <option>Front Desk / Receptionist</option>
+            <option>Office Manager</option>
+            <option>Treatment Coordinator</option>
+            <option>Billing Specialist</option>
+            <option>Dental Lab Tech</option>
+            <option>Associate Dentist</option>
+            <option>Orthodontic Assistant</option>
+            <option>Oral Surgery Assistant</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Shift Date <span class="req">*</span></label>
+          <input type="date" class="form-control" name="shift_date" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Time</label>
+          <input type="time" class="form-control" name="start_time" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time</label>
+          <input type="time" class="form-control" name="end_time" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pay Rate</label>
+        <input type="text" class="form-control" name="pay_rate" placeholder="e.g., $38/hr" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" name="notes" rows="2" placeholder="Software used, parking info, what to expect…"></textarea>
+      </div>
+      <div id="shiftMsg"></div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary" id="shiftBtn" style="flex:1">Send Shift Request →</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('shiftModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Leave a Review -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">⭐ Leave a Review</div>
+      <button class="modal-close" onclick="closeModal('reviewModal')">✕</button>
+    </div>
+    <p style="font-size:0.88rem;color:var(--gray);margin-bottom:18px">Your review is public and helps both professionals and practices build their reputation on the platform.</p>
+    <form id="reviewForm" onsubmit="submitReview(event)">
+      <input type="hidden" id="reviewWorkerId" name="worker_id" />
+      <input type="hidden" id="reviewShiftId" name="shift_id" />
+      <input type="hidden" id="reviewerType" name="reviewer_type" />
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Your Email <span class="req">*</span></label>
+        <input type="email" class="form-control" name="reviewer_email" required />
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Rating <span class="req">*</span></label>
+        <div id="starRating" style="font-size:2rem;cursor:pointer;letter-spacing:4px;margin:4px 0">
+          <span onclick="setRating(1)">☆</span><span onclick="setRating(2)">☆</span><span onclick="setRating(3)">☆</span><span onclick="setRating(4)">☆</span><span onclick="setRating(5)">☆</span>
+        </div>
+        <input type="hidden" id="ratingValue" name="rating" value="" />
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Comment <span style="font-weight:400;color:var(--gray)">(optional)</span></label>
+        <textarea class="form-control" name="comment" rows="3" placeholder="Professional, punctual, great with patients…"></textarea>
+      </div>
+      <div id="reviewMsg"></div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary" id="reviewBtn" style="flex:1">Submit Review</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('reviewModal')">Cancel</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1677,19 +1777,27 @@ function renderWorkerProfiles(workers) {
     const availLabel = isTempOpen ? 'Available for Temp' : 'Permanent Only';
     const softwareLine = w.software ? `<div class="profile-software">💻 ${escHtml(w.software)}</div>` : '';
     const licLine = w.license_number ? `<div style="font-size:0.75rem;color:var(--success);margin-top:4px">✓ Licensed: ${escHtml(w.license_number)}</div>` : '';
+    const ratingHtml = w.avg_rating
+      ? `<div style="font-size:0.82rem;color:#f59e0b;margin:4px 0">★ ${w.avg_rating} <span style="color:var(--gray)">(${w.review_count} review${w.review_count !== 1 ? 's' : ''})</span></div>`
+      : `<div style="font-size:0.78rem;color:var(--gray);margin:4px 0">No reviews yet</div>`;
     return `
       <div class="profile-card">
         <div class="profile-avatar" style="background:${color}">${initials}</div>
         <div class="profile-role">${escHtml(w.role)}</div>
         <div class="profile-location">📍 ${escHtml(w.city)}, NC</div>
         <span class="profile-avail ${availClass}">${availLabel}</span>
+        ${ratingHtml}
         ${softwareLine}
         ${licLine}
         <div class="profile-exp">${escHtml(w.experience || '')} experience</div>
         <div class="profile-privacy">🔒 Contact protected by DentalHire NC</div>
+        <button onclick="openShiftRequest(${w.id},'${escAttr(w.role)}','${escAttr(w.city)}')"
+          class="btn btn-primary" style="width:100%;margin-top:12px;padding:8px;font-size:0.85rem">
+          Request a Shift →
+        </button>
         <button onclick="openInvite(${w.id},'${escAttr(w.role)}','${escAttr(w.city)}')"
-          class="btn btn-outline" style="width:100%;margin-top:12px;padding:8px;font-size:0.85rem">
-          Send Invitation →
+          class="btn btn-outline" style="width:100%;margin-top:6px;padding:7px;font-size:0.82rem">
+          Send Message
         </button>
       </div>`;
   }).join('');
@@ -1856,7 +1964,7 @@ async function loadMyProfile() {
 
     document.getElementById('profileLoginView').style.display = 'none';
     document.getElementById('profileView').style.display = 'block';
-    renderMyProfile(data.worker, data.applications, data.invitations, email);
+    renderMyProfile(data.worker, data.applications, data.invitations, data.shifts || [], data.reviews_received || [], email);
 
   } catch {
     msg.innerHTML = `<div class="form-error">⚠️ Network error. Please try again.</div>`;
@@ -1866,7 +1974,7 @@ async function loadMyProfile() {
   }
 }
 
-function renderMyProfile(w, applications, invitations, email) {
+function renderMyProfile(w, applications, invitations, shifts, reviews_received, email) {
   const initials = `${(w.first_name||'?')[0]}${(w.last_name||'?')[0]}`.toUpperCase();
   const isTempOpen = (w.temp_open || '').toLowerCase().includes('yes') || (w.temp_open || '').toLowerCase().includes('both');
 
@@ -1930,6 +2038,40 @@ function renderMyProfile(w, applications, invitations, email) {
     <div class="profile-section-title">Invitations from Practices (${invitations.length})</div>
     ${invsHtml}
 
+    <div class="profile-section-title">Shift Requests (${shifts.length})</div>
+    ${shifts.length ? shifts.map(s => {
+      const statusColor = s.status === 'accepted' ? 'var(--success)' : s.status === 'declined' ? 'var(--danger)' : s.status === 'completed' ? '#6f42c1' : '#f59e0b';
+      const actionBtns = s.status === 'pending'
+        ? `<div style="display:flex;gap:6px;margin-top:8px">
+             <button onclick="respondShift(${s.id},'accepted','${escAttr(email)}')" class="btn btn-success" style="padding:5px 14px;font-size:0.82rem">✓ Accept</button>
+             <button onclick="respondShift(${s.id},'declined','${escAttr(email)}')" class="btn btn-danger" style="padding:5px 14px;font-size:0.82rem">✕ Decline</button>
+           </div>`
+        : s.status === 'accepted'
+          ? `<div style="margin-top:6px;font-size:0.82rem;color:var(--success);font-weight:600">✓ Accepted — awaiting completion</div>`
+          : s.status === 'completed'
+            ? `<div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+                 <span style="color:#6f42c1;font-size:0.82rem;font-weight:600">✓ Completed</span>
+                 <button onclick="openReviewModal(${w.id},${s.id},'worker','${escAttr(email)}')" class="btn btn-outline" style="padding:4px 12px;font-size:0.78rem">Leave Review</button>
+               </div>`
+            : `<div style="margin-top:6px;font-size:0.82rem;color:var(--danger)">Declined</div>`;
+      return `<div class="invitation-item">
+        <strong>📅 ${escHtml(s.practice_name)} — ${escHtml(s.position)}</strong>
+        <span style="font-size:0.82rem;color:var(--gray)">${escHtml(s.shift_date)}${s.start_time ? ' · ' + s.start_time : ''}${s.end_time ? '–' + s.end_time : ''}${s.pay_rate ? ' · ' + escHtml(s.pay_rate) : ''}</span>
+        ${s.notes ? `<p style="font-size:0.82rem;color:#555">"${escHtml(s.notes)}"</p>` : ''}
+        <span style="font-size:0.75rem;font-weight:700;color:${statusColor};text-transform:uppercase">${s.status}</span>
+        ${actionBtns}
+      </div>`;
+    }).join('') : `<div class="no-items">No shift requests yet. When a subscribed practice sends you a shift request, it will appear here.</div>`}
+
+    ${reviews_received.length ? `
+    <div class="profile-section-title">Reviews You've Received (${reviews_received.length})</div>
+    ${reviews_received.map(r => `
+      <div class="invitation-item">
+        <div style="color:#f59e0b;font-size:1rem">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+        ${r.comment ? `<p style="font-size:0.88rem;color:#444">"${escHtml(r.comment)}"</p>` : ''}
+        <div style="font-size:0.75rem;color:var(--gray)">${relativeDate(r.created_at)}</div>
+      </div>`).join('')}` : ''}
+
     <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap">
       <a href="#jobs" onclick="closeModal('myProfileModal')" class="btn btn-primary" style="flex:1">Browse Jobs →</a>
       <button onclick="resetProfileView()" class="btn btn-outline" style="padding:10px 18px">Sign Out</button>
@@ -1942,6 +2084,124 @@ function resetProfileView() {
   document.getElementById('profileView').style.display = 'none';
   document.getElementById('profileEmailInput').value = '';
   document.getElementById('profileLoginMsg').innerHTML = '';
+}
+
+// ── Shift Requests ──
+function openShiftRequest(workerId, role, city) {
+  document.getElementById('shiftWorkerId').value = workerId;
+  document.getElementById('shiftModalTitle').textContent = `📅 Request a Shift — ${role} in ${city}`;
+  document.getElementById('shiftMsg').innerHTML = '';
+  document.getElementById('shiftForm').reset();
+  document.getElementById('shiftWorkerId').value = workerId;
+  openModal('shiftModal');
+}
+
+async function submitShiftRequest(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('shiftBtn');
+  const msg = document.getElementById('shiftMsg');
+  const body = Object.fromEntries(new FormData(form));
+  body.worker_id = parseInt(body.worker_id);
+  btn.disabled = true; btn.textContent = 'Sending…'; msg.innerHTML = '';
+  try {
+    const res = await fetch(`${API}/shifts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-subscriber-email': subscriberToken },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      msg.innerHTML = `<div class="form-msg error">⚠️ ${escHtml(data.error)}</div>`;
+      return;
+    }
+    msg.innerHTML = `<div class="form-msg success">✅ Shift request sent! The professional will see it in their profile and accept or decline.</div>`;
+    form.reset();
+    body.worker_id && (document.getElementById('shiftWorkerId').value = body.worker_id);
+  } catch {
+    msg.innerHTML = `<div class="form-msg error">⚠️ Network error. Try again.</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Send Shift Request →';
+  }
+}
+
+async function respondShift(shiftId, status, email) {
+  try {
+    const res = await fetch(`${API}/shifts/${shiftId}/respond`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, status })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(data.message, 'success');
+      // Reload the profile view
+      const emailInput = document.getElementById('profileEmailInput').value.trim() || email;
+      if (emailInput) {
+        const r2 = await fetch(`${API}/workers/login`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email: emailInput }) });
+        const d2 = await r2.json();
+        if (r2.ok) renderMyProfile(d2.worker, d2.applications, d2.invitations, d2.shifts || [], d2.reviews_received || [], emailInput);
+      }
+    } else {
+      showToast(data.error, 'error');
+    }
+  } catch {
+    showToast('Network error. Try again.', 'error');
+  }
+}
+
+// ── Reviews ──
+let _reviewRating = 0;
+function openReviewModal(workerId, shiftId, reviewerType, reviewerEmail) {
+  document.getElementById('reviewWorkerId').value = workerId;
+  document.getElementById('reviewShiftId').value = shiftId || '';
+  document.getElementById('reviewerType').value = reviewerType;
+  const emailField = document.querySelector('#reviewForm [name="reviewer_email"]');
+  if (reviewerEmail && emailField) emailField.value = reviewerEmail;
+  _reviewRating = 0;
+  setRating(0);
+  document.getElementById('reviewMsg').innerHTML = '';
+  document.getElementById('reviewForm').reset();
+  document.getElementById('reviewWorkerId').value = workerId;
+  document.getElementById('reviewShiftId').value = shiftId || '';
+  document.getElementById('reviewerType').value = reviewerType;
+  if (reviewerEmail && emailField) emailField.value = reviewerEmail;
+  openModal('reviewModal');
+}
+
+function setRating(n) {
+  _reviewRating = n;
+  document.getElementById('ratingValue').value = n;
+  const stars = document.querySelectorAll('#starRating span');
+  stars.forEach((s, i) => { s.textContent = i < n ? '★' : '☆'; s.style.color = i < n ? '#f59e0b' : '#ccc'; });
+}
+
+async function submitReview(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('reviewBtn');
+  const msg = document.getElementById('reviewMsg');
+  if (!_reviewRating) { msg.innerHTML = `<div class="form-msg error">Please select a star rating.</div>`; return; }
+  const body = Object.fromEntries(new FormData(form));
+  body.worker_id = parseInt(body.worker_id);
+  body.rating = parseInt(body.rating);
+  if (body.shift_id) body.shift_id = parseInt(body.shift_id);
+  btn.disabled = true; btn.textContent = 'Submitting…'; msg.innerHTML = '';
+  try {
+    const res = await fetch(`${API}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) { msg.innerHTML = `<div class="form-msg error">⚠️ ${escHtml(data.error)}</div>`; return; }
+    msg.innerHTML = `<div class="form-msg success">✅ Review submitted! Thank you.</div>`;
+    form.reset(); _reviewRating = 0;
+  } catch {
+    msg.innerHTML = `<div class="form-msg error">⚠️ Network error. Try again.</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Submit Review';
+  }
 }
 
 // ── FORM: Invite Professional ──
@@ -2027,7 +2287,7 @@ async function submitSubscribe(e) {
     msg.innerHTML = `<div class="form-error">⚠️ Network error. Please try again.</div>`;
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Continue to Payment ($80/mo) →';
+    btn.textContent = 'Continue to Payment ($79/mo) →';
   }
 }
 

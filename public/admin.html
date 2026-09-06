@@ -201,6 +201,8 @@
     <div class="nav-item" onclick="showPage('availability',this)"><span class="icon">📅</span> Availability</div>
     <div class="nav-item" onclick="showPage('applications',this)"><span class="icon">📤</span> Applications</div>
     <div class="nav-item" onclick="showPage('invitations',this)"><span class="icon">📨</span> Invitations</div>
+    <div class="nav-item" onclick="showPage('shifts',this)"><span class="icon">📅</span> Shift Requests</div>
+    <div class="nav-item" onclick="showPage('reviews',this)"><span class="icon">⭐</span> Reviews</div>
     <div class="nav-section">Billing</div>
     <div class="nav-item" onclick="showPage('subscriptions',this)"><span class="icon">💳</span> Subscriptions</div>
     <div class="sidebar-logout" onclick="logout()">🚪 Sign Out</div>
@@ -343,6 +345,28 @@
       </div>
     </div>
 
+    <!-- SHIFTS -->
+    <div class="page" id="page-shifts">
+      <div class="page-header"><div><h1>Shift Requests</h1><p>All shift requests between practices and professionals.</p></div></div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Professional</th><th>Role</th><th>Practice</th><th>Position</th><th>Date</th><th>Time</th><th>Pay</th><th>Status</th><th>Sent</th></tr></thead>
+          <tbody id="shiftsTable"><tr class="empty-row"><td colspan="9">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- REVIEWS -->
+    <div class="page" id="page-reviews">
+      <div class="page-header"><div><h1>Reviews</h1><p>Mutual reviews between practices and professionals after completed shifts.</p></div></div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Professional</th><th>Role</th><th>Reviewer Type</th><th>Reviewer</th><th>Rating</th><th>Comment</th><th>Date</th></tr></thead>
+          <tbody id="reviewsTable"><tr class="empty-row"><td colspan="7">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
     <!-- AVAILABILITY -->
     <div class="page" id="page-availability">
       <div class="page-header">
@@ -477,6 +501,8 @@ function showPage(name, navEl) {
   if (name === 'manageJobs') loadJobs();
   if (name === 'workers') loadWorkers();
   if (name === 'availability') loadAvailabilityAdmin();
+  if (name === 'shifts') loadShiftsAdmin();
+  if (name === 'reviews') loadReviewsAdmin();
   if (name === 'applications') loadApplications();
   if (name === 'invitations') loadInvitations();
   if (name === 'subscriptions') loadSubscriptions();
@@ -596,6 +622,43 @@ async function loadWorkers() {
         <td><button class="btn btn-danger btn-sm" onclick="confirmDelete('worker',${w.id},'${esc(w.first_name)} ${esc(w.last_name)}')">Delete</button></td>
       </tr>`).join('')
     : '<tr class="empty-row"><td colspan="10">No professionals yet.</td></tr>';
+}
+
+// ── Shifts table ──
+async function loadShiftsAdmin() {
+  const res = await fetch(`${API}/admin/shifts`, { headers: authH() });
+  const { shifts = [] } = await res.json();
+  const statusColors = { pending: 'badge-inactive', accepted: 'badge-active', declined: 'badge-temp', completed: 'badge-filled' };
+  document.getElementById('shiftsTable').innerHTML = shifts.length
+    ? shifts.map(s => `<tr>
+        <td><strong>${esc(s.first_name)} ${esc(s.last_name)}</strong></td>
+        <td>${esc(s.role)}</td>
+        <td>${esc(s.practice_name)}</td>
+        <td>${esc(s.position)}</td>
+        <td>${esc(s.shift_date)}</td>
+        <td>${esc(s.start_time || '—')}${s.end_time ? '–' + esc(s.end_time) : ''}</td>
+        <td>${esc(s.pay_rate || '—')}</td>
+        <td><span class="badge ${statusColors[s.status] || 'badge-inactive'}">${s.status}</span></td>
+        <td>${relDate(s.created_at)}</td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="9">No shift requests yet.</td></tr>';
+}
+
+// ── Reviews table ──
+async function loadReviewsAdmin() {
+  const res = await fetch(`${API}/admin/reviews`, { headers: authH() });
+  const { reviews = [] } = await res.json();
+  document.getElementById('reviewsTable').innerHTML = reviews.length
+    ? reviews.map(r => `<tr>
+        <td><strong>${esc(r.first_name)} ${esc(r.last_name)}</strong></td>
+        <td>${esc(r.role)}</td>
+        <td><span class="badge ${r.reviewer_type === 'practice' ? 'badge-active' : 'badge-filled'}">${r.reviewer_type}</span></td>
+        <td>${esc(r.reviewer_email)}</td>
+        <td style="color:#f59e0b;font-size:1.1rem">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</td>
+        <td style="max-width:200px;font-size:0.82rem">${esc(r.comment || '—')}</td>
+        <td>${relDate(r.created_at)}</td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="7">No reviews yet.</td></tr>';
 }
 
 // ── Availability table ──

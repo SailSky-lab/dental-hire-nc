@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3002;
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 if (!stripe) console.warn("⚠️  STRIPE_SECRET_KEY not set — job payments and subscriptions are disabled until it's configured in .env");
 const JOB_POST_PRICE_CENTS = 1000;   // $10
-const SUBSCRIPTION_PRICE_CENTS = 8000; // $80/mo
+const SUBSCRIPTION_PRICE_CENTS = 7900; // $79/mo
 
 // ── Database ──
 const DATA_DIR = process.env.DATABASE_PATH
@@ -92,6 +92,35 @@ db.exec(`
     current_period_end     TEXT,
     created_at             TEXT DEFAULT (datetime('now')),
     updated_at             TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS dental_shifts (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    worker_id       INTEGER NOT NULL,
+    practice_name   TEXT NOT NULL,
+    practice_email  TEXT NOT NULL,
+    position        TEXT NOT NULL,
+    shift_date      TEXT NOT NULL,
+    start_time      TEXT,
+    end_time        TEXT,
+    pay_rate        TEXT,
+    notes           TEXT,
+    status          TEXT DEFAULT 'pending',
+    created_at      TEXT DEFAULT (datetime('now')),
+    updated_at      TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(worker_id) REFERENCES dental_workers(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS dental_reviews (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    worker_id      INTEGER NOT NULL,
+    shift_id       INTEGER,
+    reviewer_type  TEXT NOT NULL,
+    reviewer_email TEXT NOT NULL,
+    rating         INTEGER NOT NULL,
+    comment        TEXT,
+    created_at     TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(worker_id) REFERENCES dental_workers(id)
   );
 
   CREATE TABLE IF NOT EXISTS dental_availability (
@@ -270,7 +299,7 @@ app.get("/api/workers", (req, res) => {
   }
 });
 
-// Subscriber-only endpoint — shows first name + last initial, still no email/phone
+// Subscriber-only endpoint — shows first name + last initial + ratings, still no email/phone
 app.get("/api/workers/profiles", (req, res) => {
   const email = (req.headers["x-subscriber-email"] || "").toLowerCase().trim();
   const sub = email
@@ -287,10 +316,15 @@ app.get("/api/workers/profiles", (req, res) => {
   if (role) { sql += " AND role LIKE ?"; params.push(`%${role}%`); }
   sql += " ORDER BY created_at DESC";
   try {
-    const workers = db.prepare(sql).all(...params).map(w => ({
-      ...w,
-      last_name: w.last_name ? w.last_name[0] + "." : "",  // only last initial
-    }));
+    const workers = db.prepare(sql).all(...params).map(w => {
+      const rev = db.prepare(`SELECT AVG(rating) as avg, COUNT(*) as cnt FROM dental_reviews WHERE worker_id = ? AND reviewer_type = 'practice'`).get(w.id);
+      return {
+        ...w,
+        last_name: w.last_name ? w.last_name[0] + "." : "",
+        avg_rating: rev.avg ? Math.round(rev.avg * 10) / 10 : null,
+        review_count: rev.cnt || 0,
+      };
+    });
     res.json({ workers });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -335,7 +369,22 @@ app.post("/api/workers/login", (req, res) => {
     FROM practice_invitations WHERE worker_id = ?
     ORDER BY created_at DESC
   `).all(worker.id);
-  res.json({ worker, applications, invitations });
+  const shifts = db.prepare(`
+    SELECT id, practice_name, position, shift_date, start_time, end_time, pay_rate, notes, status, created_at
+    FROM dental_shifts WHERE worker_id = ?
+    ORDER BY created_at DESC
+  `).all(worker.id);
+  const reviews_given = db.prepare(`
+    SELECT rating, comment, created_at FROM dental_reviews
+    WHERE reviewer_email = ? AND reviewer_type = 'worker'
+    ORDER BY created_at DESC
+  `).all(email.toLowerCase().trim());
+  const reviews_received = db.prepare(`
+    SELECT rating, comment, created_at FROM dental_reviews
+    WHERE worker_id = ? AND reviewer_type = 'practice'
+    ORDER BY created_at DESC
+  `).all(worker.id);
+  res.json({ worker, applications, invitations, shifts, reviews_given, reviews_received });
 });
 
 // ── Worker: update own profile ──
@@ -437,6 +486,100 @@ app.post("/api/invite/:workerId", (req, res) => {
   }
 });
 
+// ── Shift Requests (practice → worker booking) ──
+// Subscriber-only: create a shift request
+app.post("/api/shifts", (req, res) => {
+  const subEmail = (req.headers["x-subscriber-email"] || "").toLowerCase().trim();
+  const sub = subEmail ? db.prepare("SELECT status FROM practice_subscriptions WHERE email = ?").get(subEmail) : null;
+  if (!sub || sub.status !== "active") {
+    return res.status(401).json({ error: "An active subscription is required to send shift requests." });
+  }
+  const { worker_id, practice_name, position, shift_date, start_time, end_time, pay_rate, notes } = req.body;
+  if (!worker_id || !practice_name || !position || !shift_date) {
+    return res.status(400).json({ error: "worker_id, practice_name, position, and shift_date are required." });
+  }
+  const worker = db.prepare("SELECT id FROM dental_workers WHERE id = ? AND status='active'").get(worker_id);
+  if (!worker) return res.status(404).json({ error: "Professional not found." });
+  try {
+    const result = db.prepare(`
+      INSERT INTO dental_shifts (worker_id, practice_name, practice_email, position, shift_date, start_time, end_time, pay_rate, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(worker_id, practice_name, subEmail, position, shift_date, start_time || null, end_time || null, pay_rate || null, notes || null);
+    res.status(201).json({ id: result.lastInsertRowid, message: "Shift request sent! The professional will see it in their profile." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Worker responds to shift request (accept/decline)
+app.patch("/api/shifts/:id/respond", (req, res) => {
+  const { email, status } = req.body;
+  if (!email || !["accepted", "declined"].includes(status)) {
+    return res.status(400).json({ error: "email and status (accepted/declined) are required." });
+  }
+  const worker = db.prepare("SELECT id FROM dental_workers WHERE email = ?").get(email.toLowerCase().trim());
+  if (!worker) return res.status(404).json({ error: "Professional not found." });
+  const shift = db.prepare("SELECT id FROM dental_shifts WHERE id = ? AND worker_id = ?").get(req.params.id, worker.id);
+  if (!shift) return res.status(404).json({ error: "Shift not found." });
+  db.prepare("UPDATE dental_shifts SET status = ?, updated_at = datetime('now') WHERE id = ?").run(status, req.params.id);
+  res.json({ message: status === "accepted" ? "Shift accepted! The practice has been notified." : "Shift declined." });
+});
+
+// Practice marks shift completed
+app.patch("/api/shifts/:id/complete", (req, res) => {
+  const { practice_email } = req.body;
+  if (!practice_email) return res.status(400).json({ error: "practice_email is required." });
+  const shift = db.prepare("SELECT id FROM dental_shifts WHERE id = ? AND practice_email = ? AND status = 'accepted'")
+    .get(req.params.id, practice_email.toLowerCase().trim());
+  if (!shift) return res.status(404).json({ error: "Shift not found or not in accepted state." });
+  db.prepare("UPDATE dental_shifts SET status = 'completed', updated_at = datetime('now') WHERE id = ?").run(req.params.id);
+  res.json({ message: "Shift marked as completed. You can now leave a review!" });
+});
+
+// ── Reviews ──
+// Public: get all practice→worker reviews for a worker
+app.get("/api/workers/:id/reviews", (req, res) => {
+  try {
+    const reviews = db.prepare(`
+      SELECT rating, comment, created_at FROM dental_reviews
+      WHERE worker_id = ? AND reviewer_type = 'practice'
+      ORDER BY created_at DESC LIMIT 20
+    `).all(req.params.id);
+    const agg = db.prepare(`SELECT AVG(rating) as avg, COUNT(*) as cnt FROM dental_reviews WHERE worker_id = ? AND reviewer_type = 'practice'`).get(req.params.id);
+    res.json({ reviews, avg_rating: agg.avg ? Math.round(agg.avg * 10) / 10 : null, review_count: agg.cnt || 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Submit a review (practice reviews worker, or worker reviews practice)
+app.post("/api/reviews", (req, res) => {
+  const { worker_id, shift_id, reviewer_type, reviewer_email, rating, comment } = req.body;
+  if (!worker_id || !reviewer_type || !reviewer_email || !rating) {
+    return res.status(400).json({ error: "worker_id, reviewer_type, reviewer_email, and rating are required." });
+  }
+  if (!["practice", "worker"].includes(reviewer_type)) {
+    return res.status(400).json({ error: "reviewer_type must be 'practice' or 'worker'." });
+  }
+  if (rating < 1 || rating > 5) return res.status(400).json({ error: "rating must be 1–5." });
+  // If shift_id given, verify it's completed
+  if (shift_id) {
+    const shift = db.prepare("SELECT status FROM dental_shifts WHERE id = ?").get(shift_id);
+    if (!shift || shift.status !== "completed") {
+      return res.status(400).json({ error: "Shift must be completed before leaving a review." });
+    }
+  }
+  try {
+    db.prepare(`
+      INSERT INTO dental_reviews (worker_id, shift_id, reviewer_type, reviewer_email, rating, comment)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(worker_id, shift_id || null, reviewer_type, reviewer_email.toLowerCase().trim(), Math.round(rating), comment || null);
+    res.status(201).json({ message: "Review submitted. Thank you!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Admin Auth Middleware ──
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin2026";
 
@@ -463,6 +606,8 @@ app.get("/api/admin/workers",      adminAuth, (_req, res) => res.json({ workers:
 app.get("/api/admin/applications", adminAuth, (_req, res) => res.json({ applications: db.prepare("SELECT a.*, j.position, j.practice, j.city FROM dental_applications a JOIN dental_jobs j ON a.job_id=j.id ORDER BY a.created_at DESC").all() }));
 app.get("/api/admin/invitations",  adminAuth, (_req, res) => res.json({ invitations:  db.prepare("SELECT i.*, w.role, w.city FROM practice_invitations i JOIN dental_workers w ON i.worker_id=w.id ORDER BY i.created_at DESC").all() }));
 app.get("/api/admin/availability", adminAuth, (_req, res) => res.json({ availability: db.prepare("SELECT * FROM dental_availability ORDER BY created_at DESC").all() }));
+app.get("/api/admin/shifts",       adminAuth, (_req, res) => res.json({ shifts:       db.prepare("SELECT s.*, w.first_name, w.last_name, w.role FROM dental_shifts s JOIN dental_workers w ON s.worker_id=w.id ORDER BY s.created_at DESC").all() }));
+app.get("/api/admin/reviews",      adminAuth, (_req, res) => res.json({ reviews:      db.prepare("SELECT r.*, w.first_name, w.last_name, w.role FROM dental_reviews r JOIN dental_workers w ON r.worker_id=w.id ORDER BY r.created_at DESC").all() }));
 app.get("/api/admin/subscriptions", adminAuth, (_req, res) => res.json({ subscriptions: db.prepare("SELECT * FROM practice_subscriptions ORDER BY created_at DESC").all() }));
 app.delete("/api/admin/availability/:id", adminAuth, (req, res) => {
   db.prepare("DELETE FROM dental_availability WHERE id = ?").run(req.params.id);
