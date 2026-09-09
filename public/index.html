@@ -510,6 +510,7 @@
       <a href="#pricing">Pricing</a>
       <a href="#" onclick="openModal('workerModal')">Sign Up Free</a>
       <a href="#" onclick="openModal('myProfileModal')" id="myProfileNav">My Profile</a>
+      <a href="#" onclick="openModal('practicePortalModal')">My Shifts (Practice)</a>
       <a href="#" onclick="openModal('postModal')" class="btn btn-primary">Post a Job</a>
     </div>
     <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
@@ -1429,6 +1430,29 @@
   </div>
 </div>
 
+<!-- MODAL: Practice Portal (shift history + mark complete) -->
+<div class="modal-overlay" id="practicePortalModal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <div class="modal-title">🏥 Practice Shift History</div>
+      <button class="modal-close" onclick="closeModal('practicePortalModal')">✕</button>
+    </div>
+    <div id="practicePortalLoginView">
+      <p style="font-size:0.88rem;color:var(--gray);margin-bottom:18px">Enter your subscriber email to view all shift requests you've sent and mark completed shifts.</p>
+      <div class="form-group">
+        <label class="form-label">Your Subscription Email <span class="req">*</span></label>
+        <input type="email" class="form-control" id="practicePortalEmail" placeholder="email you subscribed with…" onkeydown="if(event.key==='Enter') loadPracticePortal()" />
+      </div>
+      <div id="practicePortalLoginMsg"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="loadPracticePortal()" id="practicePortalBtn" style="flex:1">View My Shifts →</button>
+        <button class="btn btn-outline" onclick="closeModal('practicePortalModal')">Cancel</button>
+      </div>
+    </div>
+    <div id="practicePortalContent" style="display:none"></div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1964,7 +1988,7 @@ async function loadMyProfile() {
 
     document.getElementById('profileLoginView').style.display = 'none';
     document.getElementById('profileView').style.display = 'block';
-    renderMyProfile(data.worker, data.applications, data.invitations, data.shifts || [], data.reviews_received || [], email);
+    renderMyProfile(data.worker, data.applications, data.invitations, data.shifts || [], data.reviews_received || [], email, data.completed_count || 0, data.total_hours || 0, data.avg_rating);
 
   } catch {
     msg.innerHTML = `<div class="form-error">⚠️ Network error. Please try again.</div>`;
@@ -1974,7 +1998,7 @@ async function loadMyProfile() {
   }
 }
 
-function renderMyProfile(w, applications, invitations, shifts, reviews_received, email) {
+function renderMyProfile(w, applications, invitations, shifts, reviews_received, email, completed_count, total_hours, avg_rating) {
   const initials = `${(w.first_name||'?')[0]}${(w.last_name||'?')[0]}`.toUpperCase();
   const isTempOpen = (w.temp_open || '').toLowerCase().includes('yes') || (w.temp_open || '').toLowerCase().includes('both');
 
@@ -2025,6 +2049,21 @@ function renderMyProfile(w, applications, invitations, shifts, reviews_received,
       <div class="profile-info-item">
         <div class="profile-info-label">NC License</div>
         <div class="profile-info-value">${w.license_number ? '✓ ' + escHtml(w.license_number) : 'Not provided'}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;text-align:center">
+      <div style="background:var(--light);border-radius:10px;padding:14px;border:1.5px solid rgba(13,110,253,0.15)">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--navy)">${completed_count}</div>
+        <div style="font-size:0.78rem;color:var(--gray);margin-top:2px">Shifts Completed</div>
+      </div>
+      <div style="background:var(--light);border-radius:10px;padding:14px;border:1.5px solid rgba(13,110,253,0.15)">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--navy)">${total_hours}</div>
+        <div style="font-size:0.78rem;color:var(--gray);margin-top:2px">Hours Logged</div>
+      </div>
+      <div style="background:var(--light);border-radius:10px;padding:14px;border:1.5px solid rgba(13,110,253,0.15)">
+        <div style="font-size:1.8rem;font-weight:800;color:#f59e0b">${avg_rating ? '★ ' + avg_rating : '—'}</div>
+        <div style="font-size:0.78rem;color:var(--gray);margin-top:2px">Avg Rating</div>
       </div>
     </div>
 
@@ -2084,6 +2123,91 @@ function resetProfileView() {
   document.getElementById('profileView').style.display = 'none';
   document.getElementById('profileEmailInput').value = '';
   document.getElementById('profileLoginMsg').innerHTML = '';
+}
+
+// ── Practice Portal ──
+async function loadPracticePortal() {
+  const email = document.getElementById('practicePortalEmail').value.trim();
+  if (!email) return;
+  const btn = document.getElementById('practicePortalBtn');
+  const msg = document.getElementById('practicePortalLoginMsg');
+  btn.disabled = true; btn.textContent = 'Loading…'; msg.innerHTML = '';
+  try {
+    const res = await fetch(`${API}/practice/shifts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) { msg.innerHTML = `<div class="form-error">⚠️ ${escHtml(data.error)}</div>`; return; }
+    document.getElementById('practicePortalLoginView').style.display = 'none';
+    renderPracticePortal(data.practice_name, data.shifts, email);
+  } catch {
+    msg.innerHTML = `<div class="form-error">⚠️ Network error. Try again.</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'View My Shifts →';
+  }
+}
+
+function renderPracticePortal(practiceName, shifts, email) {
+  const completed = shifts.filter(s => s.status === 'completed').length;
+  const statusColor = { pending: '#f59e0b', accepted: 'var(--success)', declined: 'var(--danger)', completed: '#6f42c1' };
+  const content = document.getElementById('practicePortalContent');
+  content.style.display = 'block';
+  content.innerHTML = `
+    <div style="margin-bottom:20px">
+      <div style="font-size:1.1rem;font-weight:800;color:var(--navy)">${escHtml(practiceName || 'Your Practice')}</div>
+      <div style="font-size:0.85rem;color:var(--gray);margin-top:2px">${shifts.length} shift requests sent · ${completed} completed</div>
+    </div>
+    ${shifts.length ? shifts.map(s => `
+      <div class="invitation-item" id="shift-row-${s.id}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div>
+            <strong>${escHtml(s.first_name)} ${escHtml(s.last_name[0])}. — ${escHtml(s.role)}</strong>
+            <div style="font-size:0.82rem;color:var(--gray)">📍 ${escHtml(s.city)}</div>
+          </div>
+          <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:${statusColor[s.status] || '#888'}">${s.status}</span>
+        </div>
+        <div style="font-size:0.85rem;margin-top:6px">
+          📅 ${escHtml(s.shift_date)}${s.start_time ? ' · ' + s.start_time : ''}${s.end_time ? '–' + s.end_time : ''}
+          ${s.pay_rate ? ' · 💰 ' + escHtml(s.pay_rate) : ''}
+          · ${escHtml(s.position)}
+        </div>
+        ${s.notes ? `<div style="font-size:0.8rem;color:#555;margin-top:4px">"${escHtml(s.notes)}"</div>` : ''}
+        ${s.status === 'accepted' ? `
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="markShiftComplete(${s.id},'${escAttr(email)}',${s.worker_id_ref || 0})" class="btn btn-success" style="padding:5px 14px;font-size:0.82rem">✓ Mark Completed</button>
+            <button onclick="openReviewModal(0,${s.id},'practice','${escAttr(email)}')" class="btn btn-outline" style="padding:5px 12px;font-size:0.78rem">Leave Review</button>
+          </div>` : ''}
+        ${s.status === 'completed' ? `
+          <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+            <span style="color:#6f42c1;font-size:0.82rem;font-weight:600">✓ Completed</span>
+            <button onclick="openReviewModal(0,${s.id},'practice','${escAttr(email)}')" class="btn btn-outline" style="padding:4px 10px;font-size:0.76rem">Leave Review</button>
+          </div>` : ''}
+      </div>`).join('')
+    : `<div class="no-items">No shift requests sent yet. Browse the <a href="#professionals" onclick="closeModal('practicePortalModal')">professional profiles</a> to get started.</div>`}
+    <div style="margin-top:20px">
+      <button onclick="document.getElementById('practicePortalContent').style.display='none';document.getElementById('practicePortalLoginView').style.display='block';document.getElementById('practicePortalEmail').value=''" class="btn btn-outline">Sign Out</button>
+    </div>`;
+}
+
+async function markShiftComplete(shiftId, practiceEmail, workerId) {
+  try {
+    const res = await fetch(`${API}/shifts/${shiftId}/complete`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ practice_email: practiceEmail })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Shift marked as completed! You can now leave a review.', 'success');
+      loadPracticePortal();
+    } else {
+      showToast(data.error, 'error');
+    }
+  } catch {
+    showToast('Network error. Try again.', 'error');
+  }
 }
 
 // ── Shift Requests ──

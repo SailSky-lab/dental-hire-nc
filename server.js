@@ -372,8 +372,22 @@ app.post("/api/workers/login", (req, res) => {
   const shifts = db.prepare(`
     SELECT id, practice_name, position, shift_date, start_time, end_time, pay_rate, notes, status, created_at
     FROM dental_shifts WHERE worker_id = ?
-    ORDER BY created_at DESC
+    ORDER BY shift_date DESC
   `).all(worker.id);
+
+  // Calculate work history stats from completed shifts
+  const completedShifts = shifts.filter(s => s.status === 'completed');
+  let totalMinutes = 0;
+  for (const s of completedShifts) {
+    if (s.start_time && s.end_time) {
+      const [sh, sm] = s.start_time.split(':').map(Number);
+      const [eh, em] = s.end_time.split(':').map(Number);
+      const mins = (eh * 60 + em) - (sh * 60 + sm);
+      if (mins > 0) totalMinutes += mins;
+    }
+  }
+  const totalHours = Math.round(totalMinutes / 60 * 10) / 10;
+
   const reviews_given = db.prepare(`
     SELECT rating, comment, created_at FROM dental_reviews
     WHERE reviewer_email = ? AND reviewer_type = 'worker'
@@ -384,7 +398,11 @@ app.post("/api/workers/login", (req, res) => {
     WHERE worker_id = ? AND reviewer_type = 'practice'
     ORDER BY created_at DESC
   `).all(worker.id);
-  res.json({ worker, applications, invitations, shifts, reviews_given, reviews_received });
+  const avg_rating = reviews_received.length
+    ? Math.round(reviews_received.reduce((s, r) => s + r.rating, 0) / reviews_received.length * 10) / 10
+    : null;
+
+  res.json({ worker, applications, invitations, shifts, completed_count: completedShifts.length, total_hours: totalHours, avg_rating, reviews_given, reviews_received });
 });
 
 // ── Worker: update own profile ──
@@ -484,6 +502,25 @@ app.post("/api/invite/:workerId", (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── Practice portal: look up sent shifts by email (subscriber only) ──
+app.post("/api/practice/shifts", (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required." });
+  const sub = db.prepare("SELECT status, practice_name FROM practice_subscriptions WHERE email = ?").get(email.toLowerCase().trim());
+  if (!sub || sub.status !== "active") {
+    return res.status(401).json({ error: "No active subscription found for this email." });
+  }
+  const shifts = db.prepare(`
+    SELECT s.id, s.position, s.shift_date, s.start_time, s.end_time, s.pay_rate, s.notes, s.status, s.created_at,
+           w.first_name, w.last_name, w.role, w.city
+    FROM dental_shifts s
+    JOIN dental_workers w ON s.worker_id = w.id
+    WHERE s.practice_email = ?
+    ORDER BY s.shift_date DESC
+  `).all(email.toLowerCase().trim());
+  res.json({ practice_name: sub.practice_name, shifts });
 });
 
 // ── Shift Requests (practice → worker booking) ──
